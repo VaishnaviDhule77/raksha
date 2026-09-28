@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simulation Results · RAKSHA</title>
+  <meta name="description" content="Simulation results, capacity gap and recommended actions — RAKSHA prototype.">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0F212B">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <style>
+    /* ============ RAKSHA simulation results — self-contained styles ============ */
+    @font-face { font-family: 'Sora'; src: url('fonts/sora-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Sora'; src: url('fonts/sora-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+
+    :root {
+      --bg: #F4F1EA; --surface: #FFFFFF; --surface-2: #FAF8F2;
+      --ink: #182830; --ink-2: #3D4E58; --muted: #5F7079;
+      --line: #E3DFD4; --line-strong: #CFC9BA;
+      --brand: #0E7568; --brand-strong: #0B5E53; --brand-soft: #E9F2EF;
+      --amber: #9A5B00; --amber-soft: #FBEFDD;
+      --red: #A61B1B; --red-soft: #FBE7E4;
+      --green: #216B44; --green-soft: #E2F0E6;
+      --slate: #41586B; --slate-soft: #E8EDF2;
+      --unsafe: #5C1616; --unsafe-soft: #EFD9D6;
+      --frame: #0F212B; --frame-line: #23414F; --frame-text: #C6D4DC;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow-1: 0 1px 2px rgba(23,40,48,.06), 0 1px 3px rgba(23,40,48,.08);
+      --shadow-2: 0 4px 10px rgba(23,40,48,.08), 0 14px 36px rgba(23,40,48,.12);
+      --font-display: 'Sora', 'Trebuchet MS', 'Segoe UI', sans-serif;
+      --font-body: 'Public Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      --topbar-h: 58px; --sidebar-w: 264px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font-body); font-size: 14.5px; line-height: 1.55; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+    h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; }
+    p { margin: 0; }
+    ul, ol { margin: 0; padding: 0; }
+    a { color: var(--brand); }
+    a:hover { color: var(--brand-strong); }
+    .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .skip-link { position: absolute; left: 12px; top: -48px; z-index: 200; background: var(--frame); color: #fff; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: top .15s ease; }
+    .skip-link:focus { top: 12px; color: #fff; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+    /* shell */
+    .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: auto 1fr; grid-template-areas: "topbar topbar" "sidebar main"; min-height: 100vh; }
+    .slot-topbar { grid-area: topbar; }
+    .slot-sidebar { grid-area: sidebar; }
+    .topbar { position: sticky; top: 0; z-index: 60; display: flex; align-items: center; gap: 16px; height: var(--topbar-h); padding: 0 20px; background: var(--frame); color: #E7EEF2; border-bottom: 1px solid var(--frame-line); }
+    .topbar-brand { display: flex; align-items: center; gap: 11px; color: #fff; text-decoration: none; margin-right: auto; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 9px; flex: none; background: var(--brand); color: #fff; display: grid; place-items: center; }
+    .brand-mark svg { width: 19px; height: 19px; }
+    .brand-text strong { display: block; font: 700 14.5px var(--font-display); letter-spacing: .14em; }
+    .brand-text small { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #93A6B1; }
+    .topbar-status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .icon-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 9px; background: transparent; border: 1px solid var(--frame-line); color: var(--frame-text); cursor: pointer; }
+    .icon-btn svg { width: 19px; height: 19px; }
+    .icon-btn:hover { color: #fff; border-color: #35586B; }
+    .chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .chip-live   { background: rgba(64,178,122,.18); color: #8FE3B0; }
+    .chip-demo   { background: rgba(199,129,26,.22); color: #E8B36A; }
+    .chip-off    { background: rgba(120,144,160,.2); color: #AFC2CD; }
+    .chip-sync   { background: rgba(199,129,26,.22); color: #E8B36A; }
+    .conn-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .07em; }
+    .conn-pill .conn-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .conn-pill.on  { background: rgba(64,178,122,.16); color: #8FE3B0; }
+    .conn-pill.on .conn-dot { background: #43C06E; box-shadow: 0 0 0 3px rgba(67,192,110,.18); }
+    .conn-pill.off { background: rgba(214,69,56,.18); color: #F1A29B; }
+    .conn-pill.off .conn-dot { background: #E4574B; box-shadow: 0 0 0 3px rgba(228,87,75,.18); }
+    .conn-pill .sim-tag { font-style: normal; font-size: 9.5px; letter-spacing: .1em; border: 1px solid currentColor; border-radius: 4px; padding: 1px 5px; opacity: .85; }
+    .sim-btn { background: transparent; border: 1px solid var(--frame-line); color: var(--frame-text); border-radius: 8px; padding: 7px 11px; font: 600 11.5px var(--font-body); letter-spacing: .03em; cursor: pointer; }
+    .sim-btn:hover { color: #fff; border-color: #35586B; }
+    .sim-btn.active { border-color: #E4574B; color: #F1A29B; }
+    .sidebar { display: flex; flex-direction: column; gap: 4px; background: var(--frame); border-right: 1px solid var(--frame-line); padding: 18px 14px 16px; position: sticky; top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); overflow-y: auto; }
+    .sidebar-label { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #7A93A1; margin: 10px 12px 6px; }
+    .sidebar-label:first-child { margin-top: 0; }
+    .nav-link { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px; text-decoration: none; color: var(--frame-text); font-weight: 500; font-size: 14px; }
+    .nav-link:hover { background: rgba(255,255,255,.05); color: #fff; }
+    .nav-link.active { background: rgba(20,148,132,.22); color: #fff; box-shadow: inset 3px 0 0 0 #2FBFA8; }
+    .nav-link svg { width: 19px; height: 19px; flex: none; }
+    .sidebar-foot { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid var(--frame-line); }
+    .sidebar-note { font-size: 11.5px; color: #8FA3AE; line-height: 1.5; }
+    .sidebar-ver { font-size: 10.5px; color: #637885; margin-top: 6px; letter-spacing: .05em; }
+    .scrim { position: fixed; inset: var(--topbar-h) 0 0 0; background: rgba(10,20,26,.55); z-index: 65; }
+    .main { padding: 28px 34px 64px; min-width: 0; }
+    .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 22px; flex-wrap: wrap; }
+    .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--brand); margin-bottom: 5px; }
+    .page-head h1 { font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+    .page-sub { color: var(--muted); font-size: 14px; margin-top: 4px; max-width: 640px; }
+    .page-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* buttons & cards */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 16px; border-radius: 9px; cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: 600 13.5px var(--font-body); text-decoration: none; transition: background .12s ease, border-color .12s ease, transform .05s ease; }
+    .btn:hover { background: #FBFAF6; border-color: #B9B29E; color: var(--ink); }
+    .btn:active { transform: translateY(1px); }
+    .btn svg { width: 15px; height: 15px; }
+    .btn-primary { background: var(--brand); border-color: var(--brand-strong); color: #fff; }
+    .btn-primary:hover { background: var(--brand-strong); border-color: var(--brand-strong); color: #fff; }
+    .btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
+    .btn:disabled, .btn.is-gated { opacity: .4; cursor: not-allowed; filter: saturate(.35); }
+    .btn.is-busy { pointer-events: none; opacity: .65; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-1); padding: 18px 20px; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .card-head h2 { font-size: 13.5px; font-weight: 600; letter-spacing: .01em; }
+    .chip-meta { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 7px; line-height: 1.5; }
+    .disclaimer { font-size: 11.5px; color: var(--muted); line-height: 1.5; border-top: 1px dashed var(--line-strong); padding-top: 10px; margin-top: 12px; width: 100%; }
+
+    /* badges & tiers */
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; white-space: nowrap; }
+    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .75; }
+    .st-critical { background: var(--red-soft); color: var(--red); }
+    .st-priority { background: var(--amber-soft); color: var(--amber); }
+    .st-protect  { background: var(--slate-soft); color: var(--slate); }
+    .st-stable   { background: var(--green-soft); color: var(--green); }
+    .st-unsafe   { background: var(--unsafe-soft); color: var(--unsafe); }
+    .sev-high   { background: var(--red-soft); color: var(--red); }
+    .sev-medium { background: var(--amber-soft); color: var(--amber); }
+    .sev-low    { background: var(--slate-soft); color: var(--slate); }
+    .tier { display: inline-flex; justify-content: center; min-width: 34px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+    .p0 { background: var(--red-soft); color: var(--red); }
+    .p1 { background: var(--red-soft); color: var(--red); }
+    .p2 { background: var(--amber-soft); color: var(--amber); }
+    .p3 { background: var(--slate-soft); color: var(--slate); }
+
+    /* condition chips */
+    .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip-cond { display: inline-flex; gap: 6px; align-items: baseline; background: var(--surface-2); border: 1px solid var(--line); padding: 6px 12px; border-radius: 8px; font-size: 12.5px; color: var(--ink-2); }
+    .chip-cond b { font-weight: 700; color: var(--ink); }
+    .chip-cond.ok { border-color: #CBE3D2; background: var(--green-soft); color: var(--green); }
+    .chip-cond.bad { border-color: #EBC4BF; background: var(--red-soft); color: var(--red); }
+
+    /* KPI strip */
+    .kpi-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin: 18px 0; }
+    .kpi { padding: 15px 16px; }
+    .kpi-label { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+    .kpi-value { font: 700 24px/1.15 var(--font-display); margin: 7px 0 4px; }
+    .kpi-sub { font-size: 12px; color: var(--muted); }
+    .kpi.danger { border-color: #EBC4BF; background: #FDF6F5; }
+    .kpi.danger .kpi-value { color: var(--red); }
+    .kpi-delta { font-size: 11.5px; font-weight: 600; margin-top: 5px; }
+    .delta-good { color: var(--green); }
+    .delta-bad { color: var(--red); }
+
+    /* charts */
+    .res-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    .chart-card { display: flex; flex-direction: column; }
+    .chart-box { position: relative; flex: 1; min-height: 250px; }
+    .support-chips { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+
+    /* tables */
+    .table-wrap { overflow-x: auto; }
+    .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .table th { font: 700 11px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 11px 13px; border-bottom: 1px solid var(--line-strong); background: var(--surface-2); white-space: nowrap; }
+    .table td { padding: 11px 13px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .table tbody tr:last-child td { border-bottom: 0; }
+    .table tbody tr:hover td { background: #FBFAF5; }
+    .cell-strong { font-weight: 600; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* util bars */
+    .util { display: flex; align-items: center; gap: 9px; min-width: 120px; }
+    .util-track { flex: 1; height: 8px; min-width: 70px; background: #EEE9DC; border-radius: 99px; overflow: hidden; }
+    .util-fill { display: block; height: 100%; border-radius: 99px; background: var(--brand); }
+    .util-fill.warn { background: var(--amber); }
+    .util-fill.none { background: var(--line-strong); }
+    .util-pct { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; width: 34px; }
+
+    /* gaps & actions */
+    .gap-list { list-style: none; display: grid; gap: 12px; }
+    .gap-item { display: flex; gap: 12px; align-items: flex-start; }
+    .gap-body strong { display: block; font-size: 13.5px; margin-bottom: 2px; }
+    .gap-body span { font-size: 12.5px; color: var(--muted); }
+    .action-list { list-style: none; display: grid; gap: 2px; }
+    .action-item { display: flex; gap: 13px; padding: 12px 2px; border-bottom: 1px dashed var(--line); }
+    .action-item:last-child { border-bottom: 0; }
+    .action-body strong { display: block; font-size: 13.5px; margin-bottom: 2px; }
+    .action-body p { font-size: 12.5px; color: var(--muted); }
+    .action-time { font-size: 11.5px; color: var(--slate); font-weight: 600; margin-top: 3px; display: inline-block; }
+
+    /* preparedness index section */
+    .res-index-grid { display: grid; grid-template-columns: 300px 1fr; gap: 24px; align-items: start; }
+    .gauge-big { font: 700 46px/1 var(--font-display); }
+    .gauge-big.band-good { color: var(--green); }
+    .gauge-big.band-mid { color: var(--amber); }
+    .gauge-big.band-weak { color: var(--red); }
+    .gauge-band { font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); margin: 6px 0 14px; }
+    .comp-list { list-style: none; display: grid; gap: 8px; margin-bottom: 6px; }
+    .comp-item { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; font-size: 12.5px; }
+    .comp-item .comp-w { color: var(--muted); font-size: 11.5px; }
+    .comp-track { grid-column: 1 / -1; height: 6px; background: #EEE9DC; border-radius: 99px; overflow: hidden; }
+    .comp-fill { display: block; height: 100%; background: var(--brand); border-radius: 99px; }
+
+    /* rules box */
+    .rules-box { margin-top: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-2); padding: 4px 18px 14px; }
+    .rules-box summary { cursor: pointer; padding: 12px 0; font: 600 13.5px var(--font-display); color: var(--ink-2); }
+    .rules-box .table-wrap { background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--line); }
+
+    /* empty state */
+    .empty-state { text-align: center; padding: 64px 24px; border: 1.5px dashed var(--line-strong); border-radius: 14px; background: var(--surface-2); }
+    .empty-state h2 { font-size: 19px; margin-bottom: 8px; }
+    .empty-state p { color: var(--muted); margin-bottom: 18px; }
+    .empty-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    dialog.modal { border: 0; border-radius: 14px; box-shadow: var(--shadow-2); padding: 0; width: min(580px, calc(100vw - 32px)); color: var(--ink); background: var(--surface); }
+    dialog.modal::backdrop { background: rgba(15,33,43,.55); backdrop-filter: blur(2px); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 13px 20px; border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 14px 14px; }
+    .modal-sm { width: min(430px, calc(100vw - 32px)); }
+    .confirm-title { font-size: 15.5px; padding: 18px 20px 6px; }
+    .confirm-msg { padding: 0 20px 4px; color: var(--ink-2); font-size: 13.5px; }
+
+    /* toasts, alerts, offline banner */
+    .toasts { position: fixed; right: 18px; bottom: 18px; z-index: 130; display: flex; flex-direction: column; gap: 10px; max-width: min(380px, calc(100vw - 36px)); }
+    .toast { display: flex; align-items: flex-start; gap: 12px; background: var(--frame); color: #EDF3F6; padding: 12px 14px; border-radius: 10px; box-shadow: var(--shadow-2); border-left: 3px solid var(--brand); font-size: 13px; line-height: 1.5; animation: toast-in .22s ease; }
+    .toast.t-success { border-left-color: #43C06E; }
+    .toast.t-warn { border-left-color: #E0A23C; }
+    .toast.t-error { border-left-color: #E4574B; }
+    .toast-x { background: none; border: 0; color: #9FB2BC; cursor: pointer; padding: 2px; line-height: 1; font-size: 15px; }
+    .toast-x:hover { color: #fff; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+    .toast.toast-out { opacity: 0; transition: opacity .25s ease; }
+    .alert { display: block; padding: 12px 16px; border-radius: 10px; border: 1px solid transparent; font-size: 13px; margin-bottom: 16px; line-height: 1.55; }
+    .alert-warn { background: var(--amber-soft); border-color: #E7CFA9; color: #7A4A05; }
+    .alert code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .offline-banner { background: #6B241C; color: #F6E2DD; border-left: 4px solid #E4574B; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; }
+    .offline-banner strong { letter-spacing: .04em; }
+    .offline-banner .ob-list { margin-top: 5px; font-size: 12.5px; color: #EFCFC8; }
+    .offline-banner .ob-list span { font-weight: 700; color: #F6E2DD; }
+    .ic { width: 16px; height: 16px; flex: none; }
+
+    /* responsive */
+    @media (max-width: 1080px) {
+      .icon-btn { display: inline-flex; }
+      .app { grid-template-columns: 1fr; grid-template-areas: "topbar" "main"; }
+      .sidebar { position: fixed; top: var(--topbar-h); left: 0; bottom: 0; z-index: 70; width: 282px; height: auto; transform: translateX(-105%); transition: transform .24s ease; }
+      body.sidebar-open .sidebar { transform: translateX(0); box-shadow: var(--shadow-2); }
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+      .res-index-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 860px) {
+      .main { padding: 22px 20px 56px; }
+      .res-charts { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .page-head { flex-direction: column; align-items: flex-start; }
+      .brand-text small { display: none; }
+      .kpi-strip { grid-template-columns: 1fr; }
+      .table thead { display: none; }
+      .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+      .table tr { border: 1px solid var(--line); border-radius: 10px; margin: 0 6px 10px; padding: 6px 14px; background: var(--surface); }
+      .table tbody tr:hover td { background: transparent; }
+      .table td { display: flex; justify-content: space-between; align-items: center; gap: 16px; border: 0; border-bottom: 1px dashed var(--line); padding: 8px 0; text-align: right; }
+      .table td:last-child { border-bottom: 0; }
+      .table td::before { content: attr(data-label); font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); text-align: left; }
+    }
+    @media (max-width: 520px) { .sim-btn { display: none; } .topbar { gap: 10px; padding: 0 14px; } }
+    @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body data-page="results">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="app">
+    <div id="ra-topbar-root"></div>
+    <div id="ra-sidebar-root"></div>
+
+    <main id="main" class="main">
+      <section class="page-head">
+        <div>
+          <p class="eyebrow">Simulation results</p>
+          <h1>Outcome &amp; recommendations</h1>
+          <p class="page-sub" id="res-meta">Loading…</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn" id="btn-optimize" data-requires-online type="button">Run resource optimization</button>
+          <button class="btn btn-primary" id="btn-plan" data-requires-online type="button">Generate Emergency Plan</button>
+          <a class="btn" href="simulator.html">New simulation</a>
+        </div>
+      </section>
+
+      <div id="res-content" hidden>
+        <section class="card" aria-label="Scenario summary">
+          <div class="card-head"><h2>Scenario</h2><span class="chip-meta" id="res-optimized-chip" hidden>Allocation optimized</span></div>
+          <div class="chip-row" id="res-scenario"></div>
+        </section>
+
+        <section class="kpi-strip" id="res-kpis" aria-label="Key figures"></section>
+
+        <section class="res-charts">
+          <article class="card chart-card">
+            <div class="card-head"><h2>Protection outcome</h2></div>
+            <div class="chart-box"><canvas id="chart-protect" role="img" aria-label="Doughnut chart of protected versus unprotected food"></canvas></div>
+          </article>
+          <article class="card chart-card">
+            <div class="card-head"><h2>Resource utilization</h2></div>
+            <div class="chart-box"><canvas id="chart-util" role="img" aria-label="Bar chart of storage resource utilization"></canvas></div>
+          </article>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Storage allocation</h2></div>
+          <div class="support-chips" id="res-support"></div>
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="sr-only">Recommended storage allocation per resource</caption>
+              <thead>
+                <tr><th scope="col">Resource</th><th scope="col">Powered by</th><th scope="col">Capacity</th>
+                    <th scope="col">Allocated</th><th scope="col">Load</th><th scope="col">Items</th></tr>
+              </thead>
+              <tbody id="res-alloc-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Food status under this scenario</h2></div>
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="sr-only">Food items with status and guidance under the simulated scenario</caption>
+              <thead><tr><th scope="col">Food</th><th scope="col">Category</th><th scope="col">Quantity</th><th scope="col">Status</th><th scope="col">Guidance</th></tr></thead>
+              <tbody id="res-food-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Preparedness gaps</h2></div>
+          <ul class="gap-list" id="res-gaps"></ul>
+        </section>
+
+        <section class="card">
+          <div class="card-head"><h2>Recommended actions</h2></div>
+          <ol class="action-list" id="res-actions"></ol>
+        </section>
+
+        <section class="card card-index-res">
+          <div class="card-head"><h2>Prototype preparedness index</h2><span class="chip-meta" id="res-index-chip">—</span></div>
+          <div class="res-index-grid">
+            <div class="res-index-score">
+              <p class="gauge-big" id="res-index-score">—</p>
+              <p class="gauge-band" id="res-index-band">—</p>
+              <ul class="comp-list" id="res-index-comps"></ul>
+              <p class="disclaimer">Prototype preparedness index; not a validated disaster-risk score.</p>
+            </div>
+            <div class="chart-box"><canvas id="chart-runindex" role="img" aria-label="Radar chart of scenario preparedness components"></canvas></div>
+          </div>
+        </section>
+
+        <details class="rules-box">
+          <summary>Safety rules applied in this simulation</summary>
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="sr-only">Configured safety rules applied during simulation</caption>
+              <thead><tr><th scope="col">Rule</th><th scope="col">Action</th><th scope="col">Source</th><th scope="col">Jurisdiction</th><th scope="col">Verified</th></tr></thead>
+              <tbody id="res-rules-body"></tbody>
+            </table>
+          </div>
+          <p class="hint">Rules are configurable records (source, jurisdiction, verification date) stored in the database — not hardcoded thresholds. Sample records shown; final sourced rules are seeded in the backend phase.</p>
+        </details>
+      </div>
+
+      <section class="empty-state" id="res-empty" hidden>
+        <h2>No simulation yet</h2>
+        <p>Run a scenario to see food at risk, the capacity gap and recommended actions.</p>
+        <a class="btn btn-primary" href="simulator.html">Open the simulator</a>
+      </section>
+    </main>
+  </div>
+
+  <!-- Chart.js (third-party library — the only external script) -->
+  <script src="vendor/chart.umd.js"></script>
+
+  <script>
+  /* ================================================================
+     RAKSHA — shared core (identical block in every page)
+     The offline + sync layers live in js/offline.js and js/sync.js,
+     loaded after this script.
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA = window.RAKSHA || {};
+    R.version = '1.1.0-offline';
+
+    R.dispatch = function (name, detail) {
+      window.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
+    };
+    R.onReady = function (fn) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+      else fn();
+    };
+
+    var PATHS = {
+      shield: '<path d="M12 3l7.5 2.8v5.7c0 4.5-3.1 7.7-7.5 9.5-4.4-1.8-7.5-5-7.5-9.5V5.8z"/><path d="M8 12c1.3-1.1 2.7-1.1 4 0s2.7 1.1 4 0"/>',
+      menu: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
+      grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>',
+      box: '<path d="M4 7.8L12 3.5l8 4.3v8.4L12 20.5l-8-4.3z"/><path d="M4 7.8l8 4.3 8-4.3"/><path d="M12 12.1v8.4"/>',
+      bolt: '<path d="M13 3L6.5 13H11l-1 8L16.5 11H12l1-8z"/>',
+      pulse: '<path d="M3 12h4l2.5-6.5 4.5 13 2.5-6.5h4.5"/>',
+      bars: '<path d="M5.5 20v-6"/><path d="M12 20V8.5"/><path d="M18.5 20v-9.5"/><path d="M4 20h16"/>',
+      doc: '<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6"/><path d="M9 12.5h6"/><path d="M9 16.5h3.5"/>',
+      edit: '<path d="M4.5 19.5h4L20 8a2.12 2.12 0 0 0-3-3L5.5 16.5l-1 3z"/><path d="M14.5 6.5l3 3"/>',
+      trash: '<path d="M4.5 7h15"/><path d="M9.5 4.5h5"/><path d="M6.5 7l.9 12.5h9.2L17.5 7"/><path d="M10 11v5.5"/><path d="M14 11v5.5"/>',
+      check: '<path d="M5.5 12.5l4 4 9-9"/>'
+    };
+
+    R.ui = {
+      icon: function (name) {
+        return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + PATHS[name] + '</svg>';
+      },
+      esc: function (s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      },
+      fmtNum: function (n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 }); },
+      fmtQty: function (n, unit) { return R.ui.fmtNum(n) + ' ' + unit; },
+      fmtDate: function (iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        return d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      },
+      debounce: function (fn, ms) {
+        var t; return function () {
+          var a = arguments, c = this; clearTimeout(t);
+          t = setTimeout(function () { fn.apply(c, a); }, ms);
+        };
+      },
+      statusBadge: function (s) { return '<span class="badge st-' + String(s).toLowerCase() + '">' + R.ui.esc(s) + '</span>'; },
+      theme: {
+        categorical: ['#0E7568', '#C7811A', '#41586B', '#6E8B3D', '#A64B3C', '#3E7CA6', '#4C7A5E'],
+        status: { CRITICAL: '#A61B1B', PRIORITY: '#C7811A', PROTECT: '#3E7CA6', STABLE: '#216B44', UNSAFE: '#5C1616' }
+      },
+      _charts: {},
+      initCharts: function () {
+        if (typeof Chart === 'undefined') return false;
+        Chart.defaults.font.family = "'Public Sans', 'Segoe UI', sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#5F7079';
+        Chart.defaults.borderColor = '#E8E3D8';
+        return true;
+      },
+      makeChart: function (canvasId, config) {
+        if (typeof Chart === 'undefined') {
+          var el = document.getElementById(canvasId);
+          if (el && el.parentNode) el.parentNode.innerHTML =
+            '<p class="hint">Chart library not loaded — run the vendor setup command.</p>';
+          return null;
+        }
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+        if (R.ui._charts[canvasId]) { R.ui._charts[canvasId].destroy(); }
+        R.ui._charts[canvasId] = new Chart(canvas.getContext('2d'), config);
+        return R.ui._charts[canvasId];
+      },
+      toast: function (msg, type, ms) {
+        type = type || 'info';
+        var wrap = document.getElementById('ra-toasts');
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.id = 'ra-toasts'; wrap.className = 'toasts';
+          wrap.setAttribute('aria-live', 'polite');
+          document.body.appendChild(wrap);
+        }
+        var t = document.createElement('div');
+        t.className = 'toast t-' + type; t.setAttribute('role', 'status');
+        t.innerHTML = '<span>' + msg + '</span><button class="toast-x" aria-label="Dismiss message">×</button>';
+        var kill = function () {
+          t.classList.add('toast-out');
+          setTimeout(function () { t.remove(); }, 260);
+        };
+        t.querySelector('.toast-x').addEventListener('click', kill);
+        wrap.appendChild(t);
+        setTimeout(kill, ms || 4600);
+      },
+      confirm: function (opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+          var d = document.getElementById('ra-confirm');
+          d.querySelector('#ra-confirm-title').textContent = opts.title || 'Are you sure?';
+          d.querySelector('#ra-confirm-msg').textContent = opts.message || '';
+          var ok = d.querySelector('#ra-confirm-ok');
+          ok.textContent = opts.confirmLabel || 'Confirm';
+          ok.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary');
+          var onClose = function () {
+            d.removeEventListener('close', onClose);
+            resolve(d.returnValue === 'confirm');
+          };
+          d.addEventListener('close', onClose);
+          d.showModal();
+        });
+      }
+    };
+
+    var NAV = [
+      { group: 'Community', items: [
+        { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: 'grid' },
+        { key: 'inventory', label: 'Food Inventory', href: 'inventory.html', icon: 'box' },
+        { key: 'resources', label: 'Community Resources', href: 'resources.html', icon: 'bolt' }
+      ]},
+      { group: 'Planning', items: [
+        { key: 'simulator', label: 'Disaster Simulator', href: 'simulator.html', icon: 'pulse' },
+        { key: 'results', label: 'Simulation Results', href: 'results.html', icon: 'bars' },
+        { key: 'plan', label: 'Emergency Plan', href: 'offline-plan.html', icon: 'doc' }
+      ]}
+    ];
+
+    function topbarHTML() {
+      return '' +
+        '<header class="topbar" id="ra-topbar">' +
+          '<button class="icon-btn" id="ra-menu-btn" aria-label="Open navigation menu" aria-expanded="false">' + R.ui.icon('menu') + '</button>' +
+          '<a class="topbar-brand" href="index.html">' +
+            '<span class="brand-mark">' + R.ui.icon('shield') + '</span>' +
+            '<span class="brand-text"><strong>RAKSHA</strong><small>Food resilience · prototype</small></span>' +
+          '</a>' +
+          '<div class="topbar-status">' +
+            '<span class="chip chip-off" id="ra-data-chip" hidden title="Where the data you are viewing comes from">…</span>' +
+            '<span class="chip chip-sync" id="ra-sync-badge" hidden title="Changes waiting to be synchronised">Sync</span>' +
+            '<span class="conn-pill on" id="ra-conn-pill" role="status" aria-live="polite" title="Application connectivity">' +
+              '<span class="conn-dot" aria-hidden="true"></span><span id="ra-conn-label">ONLINE</span>' +
+            '</span>' +
+            '<button class="sim-btn" id="ra-force-offline" data-ra-force-offline type="button" ' +
+              'title="Demo control: makes the app behave as if the internet is unavailable">Simulate Internet Loss</button>' +
+          '</div>' +
+        '</header>';
+    }
+
+    function sidebarHTML() {
+      var page = document.body.getAttribute('data-page');
+      var html = '<nav class="sidebar" id="ra-sidebar" aria-label="Primary navigation">';
+      NAV.forEach(function (g) {
+        html += '<p class="sidebar-label">' + g.group + '</p><ul>';
+        g.items.forEach(function (it) {
+          var active = it.key === page;
+          html += '<li><a class="nav-link' + (active ? ' active' : '') + '" href="' + it.href + '"' +
+            (active ? ' aria-current="page"' : '') + '>' + R.ui.icon(it.icon) + '<span>' + it.label + '</span></a></li>';
+        });
+        html += '</ul>';
+      });
+      html += '<div class="sidebar-foot">' +
+          '<p class="sidebar-note">Prototype decision-support tool. RAKSHA does not guarantee food safety.</p>' +
+          '<p class="sidebar-ver">RAKSHA v' + R.version + '</p>' +
+        '</div></nav>';
+      return html;
+    }
+
+    function renderShell() {
+      var topRoot = document.getElementById('ra-topbar-root');
+      if (topRoot) { topRoot.classList.add('slot-topbar'); topRoot.innerHTML = topbarHTML(); }
+
+      var sideRoot = document.getElementById('ra-sidebar-root');
+      var hasSidebar = !!sideRoot;
+      document.body.classList.toggle('has-sidebar', hasSidebar);
+      if (sideRoot) {
+        sideRoot.classList.add('slot-sidebar');
+        sideRoot.innerHTML = sidebarHTML();
+        var scrim = document.createElement('div');
+        scrim.className = 'scrim'; scrim.id = 'ra-scrim'; scrim.hidden = true;
+        document.body.appendChild(scrim);
+      }
+
+      var menuBtn = document.getElementById('ra-menu-btn');
+      var scrimEl = document.getElementById('ra-scrim');
+      if (!hasSidebar && menuBtn) { menuBtn.style.display = 'none'; }
+      function closeSidebar() {
+        document.body.classList.remove('sidebar-open');
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        if (scrimEl) scrimEl.hidden = true;
+      }
+      if (menuBtn && hasSidebar) {
+        menuBtn.addEventListener('click', function () {
+          var open = document.body.classList.toggle('sidebar-open');
+          menuBtn.setAttribute('aria-expanded', String(open));
+          if (scrimEl) scrimEl.hidden = !open;
+        });
+      }
+      if (scrimEl) scrimEl.addEventListener('click', closeSidebar);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) closeSidebar();
+      });
+    }
+
+    function injectConfirmDialog() {
+      if (document.getElementById('ra-confirm')) return;
+      var d = document.createElement('dialog');
+      d.id = 'ra-confirm'; d.className = 'modal modal-sm';
+      d.innerHTML =
+        '<h2 class="confirm-title" id="ra-confirm-title"></h2>' +
+        '<p class="confirm-msg" id="ra-confirm-msg"></p>' +
+        '<div class="modal-actions">' +
+          '<button value="cancel" class="btn">Cancel</button>' +
+          '<button value="confirm" id="ra-confirm-ok" class="btn btn-danger">Confirm</button>' +
+        '</div>';
+      document.body.appendChild(d);
+    }
+
+    function updateDataChip(detail) {
+      var chip = document.getElementById('ra-data-chip');
+      if (!chip) return;
+      var online = R.offline ? R.offline.isOnline() : navigator.onLine;
+      var mode = detail && detail.mode ? detail.mode : (R.api ? R.api.mode : 'demo');
+      chip.hidden = false;
+      if (!online) { chip.className = 'chip chip-off'; chip.textContent = 'OFFLINE DATA'; chip.title = 'No connection — data is served from the offline cache on this device.'; }
+      else if (mode === 'live') { chip.className = 'chip chip-live'; chip.textContent = 'LIVE DATA'; chip.title = 'Connected to the RAKSHA backend.'; }
+      else { chip.className = 'chip chip-demo'; chip.textContent = 'DEMO DATA'; chip.title = 'Backend not connected — the app is running on its built-in demo dataset.'; }
+    }
+
+    function injectDemoBanner(show) {
+      var main = document.getElementById('main');
+      if (!main) return;
+      var b = document.getElementById('ra-demo-banner');
+      if (show) {
+        if (!b) {
+          b = document.createElement('div');
+          b.id = 'ra-demo-banner'; b.className = 'alert alert-warn'; b.setAttribute('role', 'note');
+          b.innerHTML = '<strong>Demo data mode.</strong> The RAKSHA backend is not connected, so this app is ' +
+            'running on its built-in demo dataset (Demo Village). Offline edits are queued and will sync when the server is reachable.';
+          main.prepend(b);
+        }
+      } else if (b) { b.remove(); }
+    }
+
+    function registerSW() {
+      if (!('serviceWorker' in navigator)) return;
+      var local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (!(location.protocol === 'https:' || local)) return;
+      navigator.serviceWorker.register('sw.js').catch(function (err) {
+        console.warn('[RAKSHA] Service Worker registration failed:', err);
+      });
+    }
+
+    renderShell();
+    injectConfirmDialog();
+    registerSW();
+    updateDataChip({ mode: 'demo' });
+
+    window.addEventListener('ra:apimode', function (e) {
+      updateDataChip(e.detail);
+      injectDemoBanner(e.detail && e.detail.mode === 'demo');
+    });
+    window.addEventListener('ra:connectivity', function () { updateDataChip(); });
+  })();
+
+  /* ================================================================
+     RAKSHA — API layer for this page (simulation results)
+     Online : server engine (authoritative) via POST /api/simulations.
+     Offline: reads the cached/latest run from rakshaDB (including
+              locally-computed offline runs from the simulator page).
+              Optimize/plan are server-only operations (gated).
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA;
+
+    var API_BASE = 'api';
+    var LS_KEY = 'raksha.demo.v1';
+    var DEMO_COMMUNITY_ID = 'comm-demo-001';
+    var INDEX_DISCLAIMER = 'Prototype preparedness index; not a validated disaster-risk score.';
+    var PLAN_DISCLAIMER = 'RAKSHA is a prototype decision-support tool. This plan does not guarantee food safety ' +
+      'and has not been tested in a real disaster. Follow instructions from local authorities and the configured, ' +
+      'source-backed food-safety guidance referenced in this document.';
+
+    var api = R.api = { mode: 'demo', lastSource: null };
+    var readyPromise = null;
+
+    var DEMO_COMMUNITY = {
+      _id: DEMO_COMMUNITY_ID, name: 'Demo Village', households: 100,
+      region: 'Coastal district (demo)', coordinator: 'Community Coordinator (demo)'
+    };
+
+    var SEED_FOOD = [
+      { id: 'food-001', name: 'Cooked food (rice & curry)', category: 'Cooked',     quantity: 30, unit: 'kg', storageType: 'Refrigerated', status: 'PRIORITY',  priority: 'High' },
+      { id: 'food-002', name: 'Milk',                       category: 'Dairy',      quantity: 20, unit: 'L',  storageType: 'Refrigerated', status: 'CRITICAL', priority: 'Critical' },
+      { id: 'food-003', name: 'Fresh vegetables',           category: 'Vegetables', quantity: 40, unit: 'kg', storageType: 'Ambient',      status: 'PROTECT',  priority: 'Medium' },
+      { id: 'food-004', name: 'Meat & fish',                category: 'Meat',       quantity: 20, unit: 'kg', storageType: 'Frozen',       status: 'CRITICAL', priority: 'Critical' },
+      { id: 'food-005', name: 'Frozen food',                category: 'Frozen',     quantity: 30, unit: 'kg', storageType: 'Frozen',       status: 'PRIORITY', priority: 'High' },
+      { id: 'food-006', name: 'Rice & grains',              category: 'Grains',     quantity: 80, unit: 'kg', storageType: 'Ambient',      status: 'STABLE',   priority: 'Low' },
+      { id: 'food-007', name: 'Canned food',                category: 'Canned',     quantity: 50, unit: 'kg', storageType: 'Ambient',      status: 'STABLE',   priority: 'Low' }
+    ];
+
+    var SEED_RESOURCES = [
+      { id: 'res-001', name: 'Refrigerator A', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Community hall – kitchen',    powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: true },
+      { id: 'res-002', name: 'Refrigerator B', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Shelter block C',             powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: false },
+      { id: 'res-003', name: 'Freezer',        type: 'Freezer',      capacity: 40, unit: 'kg',    location: 'Community hall – kitchen',    powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: true },
+      { id: 'res-004', name: 'Cold box',       type: 'Cold box',     capacity: 20, unit: 'kg',    location: 'Mobile / shelter block C',    powerSource: 'Ice',   operationalStatus: 'Operational', availability: 'Available', ownerType: 'NGO',       poweredByGenerator: false },
+      { id: 'res-005', name: 'Generator',      type: 'Generator',    capacity: 1,  unit: 'units', location: 'Community hall',              powerSource: 'Fuel',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community' },
+      { id: 'res-006', name: 'Ice stock',      type: 'Ice supply',   capacity: 20, unit: 'kg',    location: 'Community hall freezer room', powerSource: 'None',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community' }
+    ];
+
+    var DEMO_RULES = [
+      { ruleCode: 'FS-FLOOD-01', condition: 'Food has come into contact with flood water or flood-contaminated surfaces',
+        action: 'Discard affected food. Undamaged commercially canned items may be sanitised per published guidance.',
+        priority: 'Critical', explanation: 'Flood water can carry sewage and chemical contamination.',
+        sourceOrganization: 'U.S. FDA', sourceUrl: 'https://www.fda.gov/food/buy-store-serve-safe-food/food-safety-during-emergencies',
+        jurisdiction: 'US (example rule)', lastVerified: '2024-06-01' },
+      { ruleCode: 'FS-REFR-02', condition: 'Refrigerated perishable food held above 4 °C during an outage',
+        action: 'Discard perishables held above 4 °C beyond the configured limit; never rely on smell or taste.',
+        priority: 'Critical', explanation: 'Published outage guidance for refrigerated perishables.',
+        sourceOrganization: 'USDA Food Safety and Inspection Service', sourceUrl: 'https://www.fsis.usda.gov/guides/severe-storms-and-hurricane-guide',
+        jurisdiction: 'US (example rule)', lastVerified: '2024-06-01' },
+      { ruleCode: 'FS-FRZ-01', condition: 'Freezer without power',
+        action: 'Keep the freezer closed; a full freezer holds temperature about 48 h, a half-full one about 24 h.',
+        priority: 'High', explanation: 'Published freezer hold-time guidance during outages.',
+        sourceOrganization: 'USDA Food Safety and Inspection Service', sourceUrl: 'https://www.fsis.usda.gov/guides/severe-storms-and-hurricane-guide',
+        jurisdiction: 'US (example rule)', lastVerified: '2024-06-01' },
+      { ruleCode: 'FS-GEN-01', condition: 'Community generator available during an outage',
+        action: 'Prioritise cold-chain appliances on the generator circuit and plan fuel rotation.',
+        priority: 'Medium', explanation: 'Prototype default practice — replace with locally verified guidance.',
+        sourceOrganization: 'RAKSHA community practice (prototype default)', sourceUrl: '',
+        jurisdiction: 'Community', lastVerified: '' }
+    ];
+
+    function loadDemoState() {
+      try {
+        var raw = localStorage.getItem(LS_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return {
+        food: JSON.parse(JSON.stringify(SEED_FOOD)),
+        resources: JSON.parse(JSON.stringify(SEED_RESOURCES)),
+        runs: {}, plans: {}, lastRunId: null, lastPlanRunId: null, seq: 100
+      };
+    }
+    var demo = loadDemoState();
+    function saveDemoState() {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(demo)); } catch (e) { /* ignore */ }
+    }
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+    function fireMode() { R.dispatch('ra:apimode', { mode: api.mode }); }
+
+    function request(method, path, body) {
+      return fetch(API_BASE + path, {
+        method: method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined
+      }).then(function (res) {
+        if (!res.ok) {
+          return res.json().catch(function () { return {}; }).then(function (j) {
+            throw new Error((j && j.error) || ('Request failed (' + res.status + ')'));
+          });
+        }
+        return res.json();
+      });
+    }
+
+    function detectMode() {
+      var offline = R.offline && !R.offline.isOnline();
+      if (offline) { api.mode = 'demo'; fireMode(); return Promise.resolve('demo'); }
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 2500);
+      return fetch(API_BASE + '/health', { signal: ctrl.signal })
+        .then(function (res) { api.mode = res.ok ? 'live' : 'demo'; })
+        .catch(function () { api.mode = 'demo'; })
+        .then(function () { clearTimeout(timer); fireMode(); return api.mode; });
+    }
+    function ensureReady() {
+      if (!readyPromise) readyPromise = detectMode();
+      return readyPromise;
+    }
+    window.addEventListener('ra:connectivity', function (e) {
+      if (e.detail && e.detail.online) readyPromise = null;
+    });
+
+    function writeRemote(method, path, body, demoMutator) {
+      return ensureReady().then(function () {
+        if (R.offline && !R.offline.isOnline()) {
+          throw new Error('This operation runs on the server engine and needs a connection. Offline results remain viewable.');
+        }
+        if (api.mode === 'live') return request(method, path, body);
+        var result = demoMutator();
+        saveDemoState();
+        return result;
+      });
+    }
+
+    /* ---- placeholder simulation model (demo mode only) ---- */
+    function needsCold(f) {
+      return f.storageType !== 'Ambient' || ['Cooked', 'Dairy', 'Vegetables'].indexOf(f.category) !== -1;
+    }
+
+    function statusFor(f, cfg) {
+      if (f.category === 'Canned') return 'STABLE';
+      if (!needsCold(f)) return (cfg.floodExposure && f.category === 'Grains') ? 'PROTECT' : 'STABLE';
+      if (f.category === 'Frozen') return 'PRIORITY';
+      if (f.category === 'Vegetables') return cfg.ambientTempC >= 30 ? 'PRIORITY' : 'PROTECT';
+      return 'CRITICAL';
+    }
+    function noteFor(f, st) {
+      switch (st) {
+        case 'CRITICAL': return 'Move to protected cold storage within 1 h; discard if time-temperature limits are exceeded (FS-REFR-02 / FS-FRZ-01).';
+        case 'PRIORITY': return 'Cold chain required — allocate to powered or iced storage; keep doors closed (FS-FRZ-01).';
+        case 'PROTECT':  return 'Keep dry and shaded; move above the expected flood line if flooding is possible (FS-FLOOD-01).';
+        default:         return 'Shelf-stable; protect packaging from flood water (FS-FLOOD-01).';
+      }
+    }
+    var PRIO_OF = { CRITICAL: 'Critical', PRIORITY: 'High', PROTECT: 'Medium', STABLE: 'Low', UNSAFE: 'Critical' };
+    var SEV_ORDER = { CRITICAL: 0, PRIORITY: 1, PROTECT: 2, STABLE: 3, UNSAFE: 0 };
+
+    function allocate(queue, units) {
+      var placements = [], unplaced = [];
+      units.forEach(function (u) { u.free = u.capacity; });
+      queue.forEach(function (f) {
+        var remaining = f.quantity;
+        var order = units.slice().sort(function (a, b) { return unitPref(f, a) - unitPref(f, b); });
+        for (var i = 0; i < order.length && remaining > 0; i++) {
+          var u = order[i];
+          if (u.free <= 0) continue;
+          var take = Math.min(u.free, remaining);
+          u.free -= take; remaining -= take;
+          placements.push({ unitId: u.id, unit: u.name, food: f.name, qty: take });
+        }
+        if (remaining > 0) unplaced.push({ food: f.name, qty: remaining });
+      });
+      return { placements: placements, unplaced: unplaced };
+    }
+    function unitPref(f, u) {
+      var s = 0;
+      if (f.category === 'Frozen' && u.type === 'Freezer') s -= 4;
+      if (f.storageType === 'Refrigerated' && u.type === 'Refrigerator') s -= 4;
+      if (f.category === 'Vegetables' && u.type === 'Cold box') s -= 2;
+      if (u.type === 'Freezer') s += 1;
+      return s;
+    }
+
+    function buildDemoRun(cfg, strategy) {
+      var powerOff = cfg.disasterType !== 'flood';
+      var flood = cfg.disasterType !== 'outage' && !!cfg.floodExposure;
+
+      var foods = clone(demo.food).map(function (f) {
+        f.status = statusFor(f, cfg);
+        f.priority = PRIO_OF[f.status];
+        f.note = noteFor(f, f.status);
+        return f;
+      });
+
+      var coldUnits = demo.resources
+        .filter(function (r) { return ['Refrigerator', 'Freezer', 'Cold box'].indexOf(r.type) !== -1 && r.unit === 'kg' && r.operationalStatus === 'Operational'; })
+        .map(function (r) { return { id: r.id, name: r.name, type: r.type, capacity: r.capacity, poweredByGenerator: !!r.poweredByGenerator }; });
+
+      var hasGenerator = demo.resources.some(function (r) { return r.type === 'Generator' && r.operationalStatus === 'Operational'; });
+      var iceRes = demo.resources.filter(function (r) { return r.type === 'Ice supply'; })[0];
+      var iceKg = iceRes ? iceRes.capacity : 0;
+
+      var iceLastsHours = cfg.ambientTempC >= 35 ? 12 : 24;
+      var retainedHours = 12;
+
+      coldUnits.forEach(function (u) {
+        u.supported = !powerOff ? true
+          : (hasGenerator && u.poweredByGenerator) ? true
+          : (u.type === 'Cold box') ? (iceKg >= 10 && cfg.durationHours <= iceLastsHours)
+          : cfg.durationHours <= retainedHours;
+      });
+
+      var queue = foods.filter(needsCold).sort(function (a, b) {
+        return (SEV_ORDER[a.status] - SEV_ORDER[b.status]) || (b.quantity - a.quantity);
+      });
+
+      var naive = allocate(clone(queue), clone(coldUnits));
+      var optimized = (function () {
+        var supported = coldUnits.filter(function (u) { return u.supported; });
+        var rest = coldUnits.filter(function (u) { return !u.supported; });
+        var pass1 = allocate(clone(queue), clone(supported));
+        var leftovers = queue.map(function (f) {
+          var placed = pass1.placements.filter(function (p) { return p.food === f.name; })
+            .reduce(function (s, p) { return s + p.qty; }, 0);
+          return Object.assign({}, f, { quantity: Math.max(0, f.quantity - placed) });
+        }).filter(function (f) { return f.quantity > 0; });
+        var pass2 = allocate(leftovers, clone(rest));
+        return {
+          placements: pass1.placements.concat(pass2.placements),
+          unplaced: pass1.unplaced.length ? pass1.unplaced : pass2.unplaced
+        };
+      })();
+
+      function summarize(alloc) {
+        var protectedKg = 0, unprotectedPlaced = 0;
+        alloc.placements.forEach(function (p) {
+          var u = coldUnits.filter(function (x) { return x.id === p.unitId; })[0];
+          if (u && u.supported) protectedKg += p.qty; else unprotectedPlaced += p.qty;
+        });
+        var unplacedKg = alloc.unplaced.reduce(function (s, x) { return s + x.qty; }, 0);
+        return { protectedKg: protectedKg, unprotectedPlaced: unprotectedPlaced, unplacedKg: unplacedKg };
+      }
+      var naiveSum = summarize(naive);
+      var optSum = summarize(optimized);
+
+      var chosen = strategy === 'optimized' ? optimized : naive;
+      var chosenSum = strategy === 'optimized' ? optSum : naiveSum;
+
+      var needKg = queue.reduce(function (s, f) { return s + f.quantity; }, 0);
+      var totalKg = foods.reduce(function (s, f) { return s + f.quantity; }, 0);
+      var critical = foods.filter(function (f) { return f.status === 'CRITICAL'; });
+      var criticalKg = critical.reduce(function (s, f) { return s + f.quantity; }, 0);
+
+      function powerLabel(u) {
+        if (!powerOff) return 'Grid';
+        if (hasGenerator && u.poweredByGenerator) return 'Generator';
+        if (u.type === 'Cold box' && u.supported) return 'Ice';
+        if (u.supported) return 'Retained cold (closed door)';
+        return 'None — unpowered';
+      }
+
+      var allocation = coldUnits.map(function (u) {
+        var items = chosen.placements.filter(function (p) { return p.unitId === u.id; })
+          .map(function (p) { return { food: p.food, qty: p.qty }; });
+        var allocatedKg = items.reduce(function (s, x) { return s + x.qty; }, 0);
+        return {
+          resource: u.name, type: u.type, capacityKg: u.capacity, allocatedKg: allocatedKg,
+          utilization: u.capacity ? Math.round(allocatedKg / u.capacity * 100) : 0,
+          protected: u.supported, poweredBy: powerLabel(u), items: items
+        };
+      });
+      if (chosen.unplaced.length) {
+        allocation.push({
+          resource: 'UNALLOCATED — no capacity left', type: '—',
+          capacityKg: 0, allocatedKg: chosenSum.unplacedKg, utilization: 0,
+          protected: false, poweredBy: '—',
+          items: chosen.unplaced.map(function (x) { return { food: x.food, qty: x.qty }; })
+        });
+      }
+
+      var gaps = [];
+      if (chosenSum.protectedKg < needKg) {
+        gaps.push({ code: 'GAP-CAP-01', severity: 'HIGH', title: 'Cold-chain capacity shortfall',
+          detail: (needKg - chosenSum.protectedKg) + ' kg of perishable food cannot be placed in protected storage for ' + cfg.durationHours + ' h.' });
+      }
+      if (powerOff && hasGenerator) {
+        gaps.push({ code: 'GAP-PWR-01', severity: 'HIGH', title: 'Generator fuel coverage',
+          detail: 'Fuel on hand supports roughly 8 h of the ' + cfg.durationHours + ' h outage — arrange rotation or load-shedding.' });
+      }
+      if (powerOff && iceKg > 0 && iceKg < 40) {
+        gaps.push({ code: 'GAP-ICE-01', severity: 'MEDIUM', title: 'Ice reserve insufficient',
+          detail: iceKg + ' kg of ice covers only the cold box; there is no reserve for additional containers.' });
+      }
+      if (flood) {
+        gaps.push({ code: 'GAP-FLD-01', severity: 'MEDIUM', title: 'Flood-line relocation plan incomplete',
+          detail: 'No configured elevation plan for ambient stores (grains, canned goods) in the flood zone.' });
+      }
+      if (cfg.internetOff) {
+        gaps.push({ code: 'GAP-COM-01', severity: 'LOW', title: 'Offline communication plan',
+          detail: 'Printed plan copies not confirmed at all shelters; internet is assumed unavailable during the event.' });
+      }
+
+      var actions = [];
+      var criticalAtRisk = naive.placements.filter(function (p) {
+        var u = coldUnits.filter(function (x) { return x.id === p.unitId; })[0];
+        var f = foods.filter(function (x) { return x.name === p.food; })[0];
+        return f && f.status === 'CRITICAL' && u && !u.supported;
+      });
+      if (strategy !== 'optimized' && optSum.protectedKg > naiveSum.protectedKg) {
+        actions.push({ tier: 'P1', title: 'Run resource optimization',
+          detail: 'Reallocating to generator-backed and iced storage can protect up to ' + (optSum.protectedKg - naiveSum.protectedKg) + ' kg more food (' + optSum.protectedKg + ' kg total).',
+          time: 'Before the event / immediately' });
+      }
+      if (criticalAtRisk.length) {
+        actions.push({ tier: 'P1', title: 'Relocate critical perishables off the unpowered circuit',
+          detail: 'Move ' + criticalAtRisk.map(function (p) { return p.food; }).join(', ') + ' into generator-backed or iced storage within 1 hour.',
+          time: 'First hour' });
+      }
+      if (strategy === 'optimized') {
+        actions.push({ tier: 'P2', title: 'Reallocation applied',
+          detail: 'Perishables were moved into protected units (' + chosenSum.protectedKg + ' kg protected, ' + (needKg - chosenSum.protectedKg) + ' kg gap remaining). Keep doors closed.',
+          time: 'Immediate' });
+      }
+      if (powerOff) {
+        if (iceKg > 0) actions.push({ tier: 'P2', title: 'Load ice into the cold box',
+          detail: 'Distribute the ' + iceKg + ' kg ice stock to the cold box and keep lids closed (FS-FRZ-01).', time: 'First hour' });
+        if (hasGenerator) actions.push({ tier: 'P2', title: 'Plan generator fuel rotation',
+          detail: 'Draft a rotation or load-shedding schedule covering the full ' + cfg.durationHours + ' h outage (FS-GEN-01).', time: 'Day 0' });
+        actions.push({ tier: 'P2', title: 'Consume-first plan for cooked food',
+          detail: 'Serve cooked food within its safe window; discard perishables held above 4 °C beyond the configured limit — never taste-test (FS-REFR-02).', time: 'Ongoing' });
+      }
+      if (flood) {
+        actions.push({ tier: 'P2', title: 'Move ambient stores above the flood line',
+          detail: 'Relocate grains and canned stock to elevated shelving; discard any food touched by flood water (FS-FLOOD-01).', time: 'Before flooding' });
+      }
+      if (cfg.internetOff) {
+        actions.push({ tier: 'P3', title: 'Print and post the emergency plan',
+          detail: 'Post copies at the community hall and shelter block — internet is assumed unavailable during the event.', time: 'Before the event' });
+      }
+      actions.push({ tier: 'P3', title: 'Verify appliance thermometers',
+        detail: 'Check fridge/freezer thermometers and keep doors closed as long as possible.', time: 'Ongoing' });
+
+      var rulesApplied = DEMO_RULES.filter(function (r) {
+        if (r.ruleCode === 'FS-FLOOD-01') return flood;
+        if (r.ruleCode === 'FS-REFR-02') return powerOff;
+        if (r.ruleCode === 'FS-FRZ-01') return powerOff;
+        if (r.ruleCode === 'FS-GEN-01') return powerOff && hasGenerator;
+        return false;
+      });
+
+      var storageScore = Math.min(100, Math.round(chosenSum.protectedKg / Math.max(1, needKg) * 100));
+      var components = [
+        { key: 'storage',  label: 'Storage capacity',            weight: 30, score: storageScore },
+        { key: 'power',    label: 'Backup power',                weight: 20, score: hasGenerator ? 40 : 10 },
+        { key: 'stock',    label: 'Emergency food stock',        weight: 15, score: 45 },
+        { key: 'coverage', label: 'Resource coverage',           weight: 15, score: 70 },
+        { key: 'offline',  label: 'Offline preparedness',        weight: 10, score: 60 },
+        { key: 'safety',   label: 'Safety & contamination plan', weight: 10, score: flood ? 55 : 65 }
+      ];
+      var score = Math.round(components.reduce(function (s, c) { return s + c.score * c.weight / 100; }, 0));
+      var band = score >= 75 ? 'Strong' : score >= 50 ? 'Moderate' : 'Weak';
+
+      var labels = { 'flood': 'Flood', 'outage': 'Power outage', 'flood+outage': 'Flood + power outage' };
+      return {
+        scenario: {
+          label: labels[cfg.disasterType] + ' · ' + cfg.durationHours + ' h',
+          disasterType: cfg.disasterType, durationHours: cfg.durationHours,
+          powerOff: powerOff, internetOff: !!cfg.internetOff,
+          floodExposure: flood, ambientTempC: cfg.ambientTempC
+        },
+        totals: {
+          totalKg: totalKg, needKg: needKg,
+          protectedKg: chosenSum.protectedKg,
+          gapKg: needKg - chosenSum.protectedKg,
+          criticalKg: criticalKg, criticalCount: critical.length,
+          unprotectedKg: chosenSum.unprotectedPlaced + chosenSum.unplacedKg
+        },
+        foodStatus: foods,
+        allocation: allocation,
+        support: {
+          generator: { present: hasGenerator, note: hasGenerator ? 'Supports the freezer + Refrigerator A circuit · fuel on hand ≈ 8 h (placeholder)' : 'No backup power resource configured' },
+          ice: { kg: iceKg, note: iceKg > 0 ? iceKg + ' kg in stock — covers the cold box' : 'No ice stock configured' }
+        },
+        gaps: gaps,
+        actions: actions,
+        rulesApplied: rulesApplied,
+        preparedness: { score: score, band: band, components: components, disclaimer: INDEX_DISCLAIMER }
+      };
+    }
+
+    function criticalActionFor(f) {
+      if (f.category === 'Dairy') return { action: 'Keep below 4 °C on the generator circuit; discard if the configured time-temperature limit is exceeded.', ruleCode: 'FS-REFR-02' };
+      if (f.category === 'Cooked') return { action: 'Treat as consume-first: use within the safe window; never re-store at ambient temperature.', ruleCode: 'FS-REFR-02' };
+      return { action: 'Keep frozen in the generator-backed freezer; do not refreeze after thawing.', ruleCode: 'FS-FRZ-01' };
+    }
+
+    /* ---- public API ---- */
+    api.getSimulation = function (runId) {
+      /* GET /api/simulations/:runId — or the cached/local run offline */
+      return ensureReady().then(function () {
+        var online = R.offline.isOnline();
+        if (online && api.mode === 'live') {
+          return request('GET', '/simulations/' + runId).then(function (run) {
+            api.lastSource = 'live';
+            if (R.offline) R.offline.cacheSnapshot('latestRun', run);
+            return run;
+          });
+        }
+        if (!online) {
+          return R.offline.loadSnapshot('latestRun').then(function (cached) {
+            if (cached && cached.runId === runId) { api.lastSource = 'cache'; return cached; }
+            return fromDemo();
+          });
+        }
+        return fromDemo();
+        function fromDemo() {
+          var run = demo.runs[runId];
+          api.lastSource = 'demo';
+          if (!run) throw new Error('Simulation not found.');
+          return clone(run);
+        }
+      });
+    };
+
+    api.getLatestSimulation = function () {
+      /* GET /api/simulations/latest?communityId=... */
+      return ensureReady().then(function () {
+        var online = R.offline.isOnline();
+        if (online && api.mode === 'live') {
+          return request('GET', '/simulations/latest?communityId=' + DEMO_COMMUNITY_ID).then(function (run) {
+            api.lastSource = 'live';
+            if (R.offline) R.offline.cacheSnapshot('latestRun', run);
+            return run;
+          });
+        }
+        if (!online) {
+          return R.offline.loadSnapshot('latestRun').then(function (cached) {
+            if (cached) { api.lastSource = 'cache'; return cached; }
+            return fromDemo();
+          });
+        }
+        return fromDemo();
+        function fromDemo() {
+          api.lastSource = 'demo';
+          return demo.lastRunId ? clone(demo.runs[demo.lastRunId]) : null;
+        }
+      });
+    };
+
+    api.optimizeResources = function (runId) {
+      /* POST /api/simulations/:runId/optimize — server engine only */
+      return writeRemote('POST', '/simulations/' + runId + '/optimize', {}, function () {
+        var run = demo.runs[runId];
+        if (!run) throw new Error('Simulation not found.');
+        if (run.optimized) return clone(run);
+        run.initialTotals = clone(run.totals);
+        Object.assign(run, buildDemoRun(run.config, 'optimized'), { optimized: true, optimizedAt: new Date().toISOString() });
+        if (R.offline) R.offline.cacheSnapshot('latestRun', run);
+        return clone(run);
+      });
+    };
+
+    api.generatePlan = function (runId) {
+      /* POST /api/simulations/:runId/plan — server engine only */
+      return writeRemote('POST', '/simulations/' + runId + '/plan', {}, function () {
+        var run = demo.runs[runId];
+        if (!run) throw new Error('Run the simulation first.');
+        var plan = {
+          planId: 'plan-' + (demo.seq++),
+          runId: runId,
+          generatedAt: new Date().toISOString(),
+          community: run.community,
+          scenario: run.scenario,
+          priorityActions: clone(run.actions),
+          criticalFoodActions: run.foodStatus.filter(function (f) { return f.status === 'CRITICAL'; })
+            .map(function (f) {
+              var a = criticalActionFor(f);
+              return { food: f.name, qty: f.quantity, unit: f.unit, status: f.status, action: a.action, ruleCode: a.ruleCode };
+            }),
+          resources: demo.resources.map(function (r) {
+            return { name: r.name, type: r.type, capacity: r.capacity, unit: r.unit, location: r.location,
+              powerSource: r.powerSource, operationalStatus: r.operationalStatus, availability: r.availability, ownerType: r.ownerType };
+          }),
+          allocation: clone(run.allocation),
+          gaps: clone(run.gaps),
+          rulesApplied: clone(run.rulesApplied),
+          notes: '',
+          disclaimers: { index: INDEX_DISCLAIMER, plan: PLAN_DISCLAIMER }
+        };
+        demo.plans[runId] = plan;
+        demo.lastPlanRunId = runId;
+        if (R.offline) R.offline.cacheSnapshot('latestPlan', plan);
+        return clone(plan);
+      });
+    };
+
+    api.resetDemoData = function () {
+      try { localStorage.removeItem(LS_KEY); } catch (e) { /* ignore */ }
+      location.reload();
+    };
+  })();
+
+  /* ================================================================
+     RAKSHA — results controller
+     (one flagged change: offline-computed runs are labelled in the
+     meta line as provisional — the server recomputes on sync)
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA;
+    var api = R.api, ui = R.ui;
+
+    var run = null;
+
+    function sevBadge(s) {
+      var v = String(s).toUpperCase();
+      return '<span class="badge sev-' + v.toLowerCase() + '">' + ui.esc(v) + '</span>';
+    }
+
+    function kpi(label, value, sub, opts) {
+      opts = opts || {};
+      return '<article class="card kpi' + (opts.cls ? ' ' + opts.cls : '') + '">' +
+        '<p class="kpi-label">' + label + '</p>' +
+        '<p class="kpi-value">' + value + '</p>' +
+        (sub ? '<p class="kpi-sub">' + sub + '</p>' : '') +
+        (opts.delta ? '<p class="kpi-delta ' + opts.deltaCls + '">' + opts.delta + '</p>' : '') +
+        '</article>';
+    }
+
+    function renderScenario() {
+      var s = run.scenario;
+      var chips = [
+        ['Disaster', s.label.split(' · ')[0]],
+        ['Duration', s.durationHours + ' h'],
+        ['Power', s.powerOff ? 'OFF' : 'ON'],
+        ['Internet', s.internetOff ? 'OFF' : 'ON'],
+        ['Flood exposure', s.floodExposure ? 'YES' : 'NO'],
+        ['Ambient', s.ambientTempC + ' °C'],
+        ['Run', ui.fmtDate(run.createdAt)]
+      ];
+      document.getElementById('res-scenario').innerHTML = chips.map(function (c) {
+        return '<span class="chip-cond">' + c[0] + ': <b>' + ui.esc(String(c[1])) + '</b></span>';
+      }).join('');
+      document.getElementById('res-optimized-chip').hidden = !run.optimized;
+    }
+
+    function renderKpis() {
+      var t = run.totals;
+      var init = run.initialTotals;
+      var html =
+        kpi('Requiring protection', t.needKg + ' kg', 'perishable items under this scenario') +
+        kpi('Protected capacity', t.protectedKg + ' kg',
+          init ? 'after optimization' : 'in powered / iced storage',
+          init && init.protectedKg !== t.protectedKg
+            ? { delta: 'was ' + init.protectedKg + ' kg', deltaCls: 'delta-good' } : {}) +
+        kpi('Capacity gap', t.gapKg + ' kg', t.gapKg > 0 ? 'food without protected storage' : 'no gap — all food protected',
+          { cls: t.gapKg > 0 ? 'danger' : '',
+            delta: init && init.gapKg !== t.gapKg ? 'was ' + init.gapKg + ' kg' : '',
+            deltaCls: init && init.gapKg > t.gapKg ? 'delta-good' : 'delta-bad' }) +
+        kpi('Critical food', t.criticalKg + ' kg', t.criticalCount + ' items rated CRITICAL') +
+        kpi('Unprotected food', t.unprotectedKg + ' kg', 'placed in unpowered storage or unallocated');
+      document.getElementById('res-kpis').innerHTML = html;
+    }
+
+    function renderCharts() {
+      var t = run.totals;
+      var notRequiring = Math.max(0, t.totalKg - t.needKg);
+      ui.makeChart('chart-protect', {
+        type: 'doughnut',
+        data: {
+          labels: ['Protected', 'Unprotected', 'Not requiring protection'],
+          datasets: [{ data: [t.protectedKg, t.unprotectedKg, notRequiring],
+            backgroundColor: ['#0E7568', '#A61B1B', '#B9B2A3'], borderColor: '#FFFFFF', borderWidth: 2 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '58%',
+          plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 14 } } }
+        }
+      });
+
+      var units = run.allocation.filter(function (a) { return a.capacityKg > 0; });
+      ui.makeChart('chart-util', {
+        type: 'bar',
+        data: {
+          labels: units.map(function (a) { return a.resource; }),
+          datasets: [{
+            data: units.map(function (a) { return a.utilization; }),
+            backgroundColor: units.map(function (a) { return a.protected ? '#0E7568' : '#C7811A'; }),
+            borderRadius: 4, maxBarThickness: 26
+          }]
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return c.raw + '% of capacity'; } } } },
+          scales: { x: { min: 0, max: 100, grid: { color: '#EAE5DA' } }, y: { grid: { display: false } } }
+        }
+      });
+    }
+
+    function renderAllocation() {
+      var sup = document.getElementById('res-support');
+      sup.innerHTML =
+        '<span class="chip-cond">Generator: <b>' + ui.esc(run.support.generator.note) + '</b></span>' +
+        '<span class="chip-cond">Ice: <b>' + ui.esc(run.support.ice.note) + '</b></span>';
+
+      document.getElementById('res-alloc-body').innerHTML = run.allocation.map(function (a) {
+        var items = a.items.length
+          ? a.items.map(function (i) { return ui.esc(i.food) + ' — ' + ui.fmtNum(i.qty) + ' kg'; }).join('<br>')
+          : '<span class="hint">empty</span>';
+        var fillCls = a.protected ? '' : (a.utilization > 0 ? 'warn' : 'none');
+        return '<tr>' +
+          '<td data-label="Resource"><span class="cell-strong">' + ui.esc(a.resource) + '</span>' +
+            (a.protected ? '<span class="badge st-stable" style="margin-left:6px">PROTECTED</span>'
+                         : '<span class="badge st-priority" style="margin-left:6px">UNPROTECTED</span>') + '</td>' +
+          '<td data-label="Powered by">' + ui.esc(a.poweredBy) + '</td>' +
+          '<td data-label="Capacity" class="num">' + ui.fmtNum(a.capacityKg) + ' kg</td>' +
+          '<td data-label="Allocated" class="num">' + ui.fmtNum(a.allocatedKg) + ' kg</td>' +
+          '<td data-label="Load"><span class="util"><span class="util-track"><span class="util-fill ' + fillCls +
+            '" style="width:' + a.utilization + '%"></span></span><span class="util-pct">' + a.utilization + '%</span></span></td>' +
+          '<td data-label="Items">' + items + '</td></tr>';
+      }).join('');
+    }
+
+    function renderFood() {
+      document.getElementById('res-food-body').innerHTML = run.foodStatus.map(function (f) {
+        return '<tr>' +
+          '<td data-label="Food"><span class="cell-strong">' + ui.esc(f.name) + '</span></td>' +
+          '<td data-label="Category">' + ui.esc(f.category) + '</td>' +
+          '<td data-label="Quantity" class="num">' + ui.fmtNum(f.quantity) + ' ' + ui.esc(f.unit) + '</td>' +
+          '<td data-label="Status">' + ui.statusBadge(f.status) + '</td>' +
+          '<td data-label="Guidance">' + ui.esc(f.note) + '</td></tr>';
+      }).join('');
+    }
+
+    function renderGaps() {
+      var el = document.getElementById('res-gaps');
+      el.innerHTML = run.gaps.length ? run.gaps.map(function (g) {
+        return '<li class="gap-item">' + sevBadge(g.severity) +
+          '<div class="gap-body"><strong>' + ui.esc(g.code) + ' · ' + ui.esc(g.title) + '</strong>' +
+          '<span>' + ui.esc(g.detail) + '</span></div></li>';
+      }).join('') : '<li class="hint">No preparedness gaps detected for this scenario.</li>';
+    }
+
+    function renderActions() {
+      document.getElementById('res-actions').innerHTML = run.actions.map(function (a) {
+        return '<li class="action-item"><span class="tier ' + a.tier.toLowerCase() + '">' + a.tier + '</span>' +
+          '<div class="action-body"><strong>' + ui.esc(a.title) + '</strong>' +
+          '<p>' + ui.esc(a.detail) + '</p>' +
+          '<span class="action-time">When: ' + ui.esc(a.time) + '</span></div></li>';
+      }).join('');
+    }
+
+    function renderIndex() {
+      var p = run.preparedness;
+      var cls = p.score >= 75 ? 'band-good' : p.score >= 50 ? 'band-mid' : 'band-weak';
+      document.getElementById('res-index-score').textContent = p.score + ' / 100';
+      document.getElementById('res-index-score').className = 'gauge-big ' + cls;
+      document.getElementById('res-index-band').textContent = p.band + ' — under this scenario';
+      document.getElementById('res-index-chip').textContent = p.band;
+
+      document.getElementById('res-index-comps').innerHTML = p.components.map(function (c) {
+        return '<li class="comp-item"><span>' + ui.esc(c.label) + '</span>' +
+          '<span class="comp-w">weight ' + c.weight + '%</span><span>' + c.score + '</span>' +
+          '<span class="comp-track"><span class="comp-fill" style="width:' + c.score + '%"></span></span></li>';
+      }).join('');
+
+      var comps = p.components;
+      var labels = ['Storage', 'Backup power', 'Food stock', 'Coverage', 'Offline', 'Safety plan'];
+      ui.makeChart('chart-runindex', {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{ label: 'Score', data: comps.map(function (c) { return c.score; }),
+            backgroundColor: 'rgba(14,117,104,.16)', borderColor: '#0E7568',
+            pointBackgroundColor: '#0E7568', borderWidth: 2 }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { r: { min: 0, max: 100, ticks: { stepSize: 25, backdropColor: 'transparent' },
+            grid: { color: '#E8E3D8' }, angleLines: { color: '#E8E3D8' },
+            pointLabels: { font: { size: 11 }, color: '#4C5B64' } } },
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function renderRules() {
+      document.getElementById('res-rules-body').innerHTML = run.rulesApplied.map(function (r) {
+        var src = r.sourceUrl
+          ? '<a href="' + ui.esc(r.sourceUrl) + '" target="_blank" rel="noopener">' + ui.esc(r.sourceOrganization) + '</a>'
+          : ui.esc(r.sourceOrganization);
+        return '<tr><td data-label="Rule"><span class="cell-strong">' + ui.esc(r.ruleCode) + '</span></td>' +
+          '<td data-label="Action">' + ui.esc(r.action) + '</td>' +
+          '<td data-label="Source">' + src + '</td>' +
+          '<td data-label="Jurisdiction">' + ui.esc(r.jurisdiction) + '</td>' +
+          '<td data-label="Verified">' + ui.esc(r.lastVerified || '—') + '</td></tr>';
+      }).join('');
+    }
+
+    function renderAll() {
+      document.getElementById('res-meta').textContent =
+        'Run ' + run.runId + ' · ' + ui.fmtDate(run.createdAt) +
+        (run.localCalculation ? ' · computed offline (provisional — the server will recompute on sync)'
+         : (api.lastSource === 'demo' ? ' · demo placeholder result' : ''));
+      renderScenario(); renderKpis(); renderCharts(); renderAllocation();
+      renderFood(); renderGaps(); renderActions(); renderIndex(); renderRules();
+      var optBtn = document.getElementById('btn-optimize');
+      optBtn.disabled = !!run.optimized;
+      optBtn.classList.toggle('is-gated', !!run.optimized);
+      optBtn.textContent = run.optimized ? 'Optimization applied' : 'Run resource optimization';
+    }
+
+    R.onReady(function () {
+      ui.initCharts();
+      var runId = new URLSearchParams(window.location.search).get('run');
+
+      var loadOp = runId ? api.getSimulation(runId) : api.getLatestSimulation();
+      loadOp.then(function (data) {
+        if (!data) {
+          document.getElementById('res-empty').hidden = false;
+          document.getElementById('res-content').hidden = true;
+          document.getElementById('res-meta').textContent = 'No simulation found.';
+          return;
+        }
+        run = data;
+        document.getElementById('res-content').hidden = false;
+        renderAll();
+      }).catch(function (err) {
+        document.getElementById('res-empty').hidden = false;
+        document.getElementById('res-meta').textContent = 'Could not load the simulation: ' + err.message;
+      });
+
+      document.getElementById('btn-optimize').addEventListener('click', function () {
+        if (!run || run.optimized) return;
+        var btn = this;
+        btn.classList.add('is-busy'); btn.textContent = 'Optimizing…';
+        api.optimizeResources(run.runId).then(function (updated) {
+          run = updated;
+          renderAll();
+          ui.toast('Resource optimization applied — protected capacity is now ' +
+            run.totals.protectedKg + ' kg (gap ' + run.totals.gapKg + ' kg).', 'success');
+        }).catch(function (err) {
+          ui.toast(err.message, 'error');
+          btn.classList.remove('is-busy');
+          btn.textContent = 'Run resource optimization';
+        });
+      });
+
+      document.getElementById('btn-plan').addEventListener('click', function () {
+        if (!run) return;
+        var btn = this;
+        btn.classList.add('is-busy'); btn.textContent = 'Generating…';
+        api.generatePlan(run.runId).then(function () {
+          ui.toast('Emergency action plan generated.', 'success');
+          window.location.href = 'offline-plan.html?run=' + encodeURIComponent(run.runId);
+        }).catch(function (err) {
+          ui.toast(err.message, 'error');
+          btn.classList.remove('is-busy');
+          btn.textContent = 'Generate Emergency Plan';
+        });
+      });
+    });
+  })();
+  </script>
+
+  <!-- Shared offline + sync layers (loaded after the page script) -->
+  <script src="js/offline.js"></script>
+  <script src="js/sync.js"></script>
+</body>
+</html>

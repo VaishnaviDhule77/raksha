@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Food Inventory · RAKSHA</title>
+  <meta name="description" content="Community food inventory — RAKSHA prototype.">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0F212B">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <style>
+    /* ============ RAKSHA food inventory — self-contained styles ============ */
+    @font-face { font-family: 'Sora'; src: url('fonts/sora-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Sora'; src: url('fonts/sora-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+
+    :root {
+      --bg: #F4F1EA; --surface: #FFFFFF; --surface-2: #FAF8F2;
+      --ink: #182830; --ink-2: #3D4E58; --muted: #5F7079;
+      --line: #E3DFD4; --line-strong: #CFC9BA;
+      --brand: #0E7568; --brand-strong: #0B5E53; --brand-soft: #E9F2EF;
+      --amber: #9A5B00; --amber-soft: #FBEFDD;
+      --red: #A61B1B; --red-soft: #FBE7E4;
+      --green: #216B44; --green-soft: #E2F0E6;
+      --slate: #41586B; --slate-soft: #E8EDF2;
+      --unsafe: #5C1616; --unsafe-soft: #EFD9D6;
+      --frame: #0F212B; --frame-line: #23414F; --frame-text: #C6D4DC;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow-1: 0 1px 2px rgba(23,40,48,.06), 0 1px 3px rgba(23,40,48,.08);
+      --shadow-2: 0 4px 10px rgba(23,40,48,.08), 0 14px 36px rgba(23,40,48,.12);
+      --font-display: 'Sora', 'Trebuchet MS', 'Segoe UI', sans-serif;
+      --font-body: 'Public Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      --topbar-h: 58px; --sidebar-w: 264px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font-body); font-size: 14.5px; line-height: 1.55; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+    h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; }
+    p { margin: 0; }
+    ul, ol { margin: 0; padding: 0; }
+    a { color: var(--brand); }
+    a:hover { color: var(--brand-strong); }
+    .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .skip-link { position: absolute; left: 12px; top: -48px; z-index: 200; background: var(--frame); color: #fff; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: top .15s ease; }
+    .skip-link:focus { top: 12px; color: #fff; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+    .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: auto 1fr; grid-template-areas: "topbar topbar" "sidebar main"; min-height: 100vh; }
+    .slot-topbar { grid-area: topbar; }
+    .slot-sidebar { grid-area: sidebar; }
+    .topbar { position: sticky; top: 0; z-index: 60; display: flex; align-items: center; gap: 16px; height: var(--topbar-h); padding: 0 20px; background: var(--frame); color: #E7EEF2; border-bottom: 1px solid var(--frame-line); }
+    .topbar-brand { display: flex; align-items: center; gap: 11px; color: #fff; text-decoration: none; margin-right: auto; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 9px; flex: none; background: var(--brand); color: #fff; display: grid; place-items: center; }
+    .brand-mark svg { width: 19px; height: 19px; }
+    .brand-text strong { display: block; font: 700 14.5px var(--font-display); letter-spacing: .14em; }
+    .brand-text small { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #93A6B1; }
+    .topbar-status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .icon-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 9px; background: transparent; border: 1px solid var(--frame-line); color: var(--frame-text); cursor: pointer; }
+    .icon-btn svg { width: 19px; height: 19px; }
+    .icon-btn:hover { color: #fff; border-color: #35586B; }
+    .chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .chip-live   { background: rgba(64,178,122,.18); color: #8FE3B0; }
+    .chip-demo   { background: rgba(199,129,26,.22); color: #E8B36A; }
+    .chip-off    { background: rgba(120,144,160,.2); color: #AFC2CD; }
+    .chip-sync   { background: rgba(199,129,26,.22); color: #E8B36A; }
+    .conn-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .07em; }
+    .conn-pill .conn-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .conn-pill.on  { background: rgba(64,178,122,.16); color: #8FE3B0; }
+    .conn-pill.on .conn-dot { background: #43C06E; box-shadow: 0 0 0 3px rgba(67,192,110,.18); }
+    .conn-pill.off { background: rgba(214,69,56,.18); color: #F1A29B; }
+    .conn-pill.off .conn-dot { background: #E4574B; box-shadow: 0 0 0 3px rgba(228,87,75,.18); }
+    .conn-pill .sim-tag { font-style: normal; font-size: 9.5px; letter-spacing: .1em; border: 1px solid currentColor; border-radius: 4px; padding: 1px 5px; opacity: .85; }
+    .sim-btn { background: transparent; border: 1px solid var(--frame-line); color: var(--frame-text); border-radius: 8px; padding: 7px 11px; font: 600 11.5px var(--font-body); letter-spacing: .03em; cursor: pointer; }
+    .sim-btn:hover { color: #fff; border-color: #35586B; }
+    .sim-btn.active { border-color: #E4574B; color: #F1A29B; }
+    .sidebar { display: flex; flex-direction: column; gap: 4px; background: var(--frame); border-right: 1px solid var(--frame-line); padding: 18px 14px 16px; position: sticky; top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); overflow-y: auto; }
+    .sidebar-label { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #7A93A1; margin: 10px 12px 6px; }
+    .sidebar-label:first-child { margin-top: 0; }
+    .nav-link { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px; text-decoration: none; color: var(--frame-text); font-weight: 500; font-size: 14px; }
+    .nav-link:hover { background: rgba(255,255,255,.05); color: #fff; }
+    .nav-link.active { background: rgba(20,148,132,.22); color: #fff; box-shadow: inset 3px 0 0 0 #2FBFA8; }
+    .nav-link svg { width: 19px; height: 19px; flex: none; }
+    .sidebar-foot { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid var(--frame-line); }
+    .sidebar-note { font-size: 11.5px; color: #8FA3AE; line-height: 1.5; }
+    .sidebar-ver { font-size: 10.5px; color: #637885; margin-top: 6px; letter-spacing: .05em; }
+    .scrim { position: fixed; inset: var(--topbar-h) 0 0 0; background: rgba(10,20,26,.55); z-index: 65; }
+    .main { padding: 28px 34px 64px; min-width: 0; }
+    .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 22px; flex-wrap: wrap; }
+    .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--brand); margin-bottom: 5px; }
+    .page-head h1 { font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+    .page-sub { color: var(--muted); font-size: 14px; margin-top: 4px; max-width: 640px; }
+    .page-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 16px; border-radius: 9px; cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: 600 13.5px var(--font-body); text-decoration: none; transition: background .12s ease, border-color .12s ease, transform .05s ease; }
+    .btn:hover { background: #FBFAF6; border-color: #B9B29E; color: var(--ink); }
+    .btn:active { transform: translateY(1px); }
+    .btn svg { width: 15px; height: 15px; }
+    .btn-primary { background: var(--brand); border-color: var(--brand-strong); color: #fff; }
+    .btn-primary:hover { background: var(--brand-strong); border-color: var(--brand-strong); color: #fff; }
+    .btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
+    .btn-danger-ghost { background: transparent; border-color: #DDBBB6; color: var(--red); }
+    .btn-danger-ghost:hover { background: var(--red-soft); border-color: var(--red); color: var(--red); }
+    .btn-sm { padding: 6px 11px; font-size: 12.5px; border-radius: 7px; }
+    .btn-sm svg { width: 13px; height: 13px; }
+    .btn.is-gated { opacity: .4; cursor: not-allowed; filter: saturate(.35); }
+    .btn.is-busy { pointer-events: none; opacity: .65; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-1); padding: 18px 20px; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 7px; line-height: 1.5; }
+
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; white-space: nowrap; }
+    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .75; }
+    .st-critical { background: var(--red-soft); color: var(--red); }
+    .st-priority { background: var(--amber-soft); color: var(--amber); }
+    .st-protect  { background: var(--slate-soft); color: var(--slate); }
+    .st-stable   { background: var(--green-soft); color: var(--green); }
+    .st-unsafe   { background: var(--unsafe-soft); color: var(--unsafe); }
+    .prio-critical { background: var(--red-soft); color: var(--red); }
+    .prio-high     { background: var(--amber-soft); color: var(--amber); }
+    .prio-medium   { background: var(--slate-soft); color: var(--slate); }
+    .prio-low      { background: #EFEDE6; color: var(--muted); }
+    .legend-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .legend-txt { font-size: 12px; color: var(--muted); margin-right: 8px; }
+
+    .toolbar { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 18px; }
+    .toolbar .field { margin-bottom: 0; }
+    .f-search { flex: 1 1 220px; }
+    .f-filter { flex: 0 1 170px; }
+    .toolbar-meta { margin-left: auto; font-size: 12.5px; color: var(--muted); padding-bottom: 9px; white-space: nowrap; }
+    .table-card { padding: 6px 6px 10px; }
+    .table-wrap { overflow-x: auto; }
+    .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .table th { font: 700 11px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 11px 13px; border-bottom: 1px solid var(--line-strong); background: var(--surface-2); white-space: nowrap; }
+    .table td { padding: 11px 13px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .table tbody tr:last-child td { border-bottom: 0; }
+    .table tbody tr:hover td { background: #FBFAF5; }
+    .cell-strong { font-weight: 600; }
+    .num { font-variant-numeric: tabular-nums; }
+    .row-actions { display: flex; gap: 7px; white-space: nowrap; }
+
+    label { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+    input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: #fff; color: var(--ink); font: 400 13.5px var(--font-body); }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand); outline-offset: 1px; border-color: var(--brand); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+    .form-grid .field { margin-bottom: 13px; }
+    .span-2 { grid-column: span 2; }
+
+    dialog.modal { border: 0; border-radius: 14px; box-shadow: var(--shadow-2); padding: 0; width: min(580px, calc(100vw - 32px)); color: var(--ink); background: var(--surface); }
+    dialog.modal::backdrop { background: rgba(15,33,43,.55); backdrop-filter: blur(2px); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 15px 20px; border-bottom: 1px solid var(--line); }
+    .modal-head h2 { font-size: 15px; }
+    .modal-head .icon-btn { display: inline-flex; border-color: var(--line-strong); color: var(--muted); width: 32px; height: 32px; }
+    .modal-head .icon-btn:hover { color: var(--ink); border-color: var(--line-strong); background: var(--surface-2); }
+    .modal-body { padding: 18px 20px; max-height: 64vh; overflow-y: auto; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 13px 20px; border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 14px 14px; }
+    .modal-sm { width: min(430px, calc(100vw - 32px)); }
+    .confirm-title { font-size: 15.5px; padding: 18px 20px 6px; }
+    .confirm-msg { padding: 0 20px 4px; color: var(--ink-2); font-size: 13.5px; }
+
+    .toasts { position: fixed; right: 18px; bottom: 18px; z-index: 130; display: flex; flex-direction: column; gap: 10px; max-width: min(380px, calc(100vw - 36px)); }
+    .toast { display: flex; align-items: flex-start; gap: 12px; background: var(--frame); color: #EDF3F6; padding: 12px 14px; border-radius: 10px; box-shadow: var(--shadow-2); border-left: 3px solid var(--brand); font-size: 13px; line-height: 1.5; animation: toast-in .22s ease; }
+    .toast.t-success { border-left-color: #43C06E; }
+    .toast.t-warn { border-left-color: #E0A23C; }
+    .toast.t-error { border-left-color: #E4574B; }
+    .toast-x { background: none; border: 0; color: #9FB2BC; cursor: pointer; padding: 2px; line-height: 1; font-size: 15px; }
+    .toast-x:hover { color: #fff; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+    .toast.toast-out { opacity: 0; transition: opacity .25s ease; }
+    .alert { display: block; padding: 12px 16px; border-radius: 10px; border: 1px solid transparent; font-size: 13px; margin-bottom: 16px; line-height: 1.55; }
+    .alert-warn { background: var(--amber-soft); border-color: #E7CFA9; color: #7A4A05; }
+    .alert code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+    .offline-banner { background: #6B241C; color: #F6E2DD; border-left: 4px solid #E4574B; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; }
+    .offline-banner strong { letter-spacing: .04em; }
+    .offline-banner .ob-list { margin-top: 5px; font-size: 12.5px; color: #EFCFC8; }
+    .offline-banner .ob-list span { font-weight: 700; color: #F6E2DD; }
+    .ic { width: 16px; height: 16px; flex: none; }
+
+    @media (max-width: 1080px) {
+      .icon-btn { display: inline-flex; }
+      .app { grid-template-columns: 1fr; grid-template-areas: "topbar" "main"; }
+      .sidebar { position: fixed; top: var(--topbar-h); left: 0; bottom: 0; z-index: 70; width: 282px; height: auto; transform: translateX(-105%); transition: transform .24s ease; }
+      body.sidebar-open .sidebar { transform: translateX(0); box-shadow: var(--shadow-2); }
+    }
+    @media (max-width: 860px) {
+      .main { padding: 22px 20px 56px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid .span-2 { grid-column: span 1; }
+    }
+    @media (max-width: 720px) {
+      .page-head { flex-direction: column; align-items: flex-start; }
+      .toolbar { flex-direction: column; align-items: stretch; }
+      .toolbar-meta { margin-left: 0; padding-bottom: 0; }
+      .table thead { display: none; }
+      .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+      .table tr { border: 1px solid var(--line); border-radius: 10px; margin: 0 6px 10px; padding: 6px 14px; background: var(--surface); }
+      .table tbody tr:hover td { background: transparent; }
+      .table td { display: flex; justify-content: space-between; align-items: center; gap: 16px; border: 0; border-bottom: 1px dashed var(--line); padding: 8px 0; text-align: right; }
+      .table td:last-child { border-bottom: 0; }
+      .table td::before { content: attr(data-label); font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); text-align: left; }
+      .row-actions { justify-content: flex-end; }
+      .brand-text small { display: none; }
+    }
+    @media (max-width: 520px) { .sim-btn { display: none; } .topbar { gap: 10px; padding: 0 14px; } }
+    @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body data-page="inventory">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="app">
+    <div id="ra-topbar-root"></div>
+    <div id="ra-sidebar-root"></div>
+
+    <main id="main" class="main">
+      <section class="page-head">
+        <div>
+          <p class="eyebrow">Food inventory</p>
+          <h1>Community food inventory</h1>
+          <p class="page-sub" id="inv-meta">Loading…</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary" id="btn-add-food" type="button">Add food item</button>
+        </div>
+      </section>
+
+      <div class="legend-row" aria-label="Status legend">
+        <span class="badge st-critical">Critical</span><span class="legend-txt">highly perishable, first to protect</span>
+        <span class="badge st-priority">Priority</span><span class="legend-txt">needs the cold chain</span>
+        <span class="badge st-protect">Protect</span><span class="legend-txt">keep dry, shaded, above flood line</span>
+        <span class="badge st-stable">Stable</span><span class="legend-txt">shelf-stable</span>
+        <span class="badge st-unsafe">Unsafe</span><span class="legend-txt">do not consume</span>
+      </div>
+
+      <section class="toolbar card">
+        <div class="field f-search">
+          <label for="inv-search">Search</label>
+          <input type="search" id="inv-search" placeholder="Search by food name…">
+        </div>
+        <div class="field f-filter">
+          <label for="inv-cat">Category</label>
+          <select id="inv-cat">
+            <option value="">All categories</option>
+            <option>Cooked</option><option>Dairy</option><option>Vegetables</option>
+            <option>Fruits</option><option>Meat</option><option>Frozen</option>
+            <option>Grains</option><option>Canned</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field f-filter">
+          <label for="inv-status">Status</label>
+          <select id="inv-status">
+            <option value="">All statuses</option>
+            <option>CRITICAL</option><option>PRIORITY</option><option>PROTECT</option>
+            <option>STABLE</option><option>UNSAFE</option>
+          </select>
+        </div>
+        <p class="toolbar-meta" id="inv-count">—</p>
+      </section>
+
+      <section class="card table-card">
+        <div class="table-wrap">
+          <table class="table" id="food-table">
+            <caption class="sr-only">Food inventory items with category, quantity, storage type, status and priority</caption>
+            <thead>
+              <tr>
+                <th scope="col">Food</th><th scope="col">Category</th><th scope="col">Quantity</th>
+                <th scope="col">Unit</th><th scope="col">Storage type</th><th scope="col">Status</th>
+                <th scope="col">Priority</th><th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="food-tbody"><tr><td colspan="8" class="hint" style="text-align:center;padding:28px">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <dialog class="modal" id="food-dialog" aria-labelledby="food-dialog-title">
+        <form id="food-form" novalidate>
+          <div class="modal-head">
+            <h2 id="food-dialog-title">Add food item</h2>
+            <button type="button" class="icon-btn" data-close aria-label="Close dialog">×</button>
+          </div>
+          <div class="modal-body form-grid">
+            <div class="field span-2">
+              <label for="f-name">Food name</label>
+              <input id="f-name" type="text" required maxlength="60" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="f-category">Category</label>
+              <select id="f-category">
+                <option>Cooked</option><option>Dairy</option><option>Vegetables</option>
+                <option>Fruits</option><option>Meat</option><option>Frozen</option>
+                <option>Grains</option><option>Canned</option><option>Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-storage">Storage type</label>
+              <select id="f-storage"><option>Ambient</option><option>Refrigerated</option><option>Frozen</option></select>
+            </div>
+            <div class="field">
+              <label for="f-qty">Quantity</label>
+              <input id="f-qty" type="number" min="0.1" step="0.1" required>
+            </div>
+            <div class="field">
+              <label for="f-unit">Unit</label>
+              <select id="f-unit"><option>kg</option><option>L</option><option>units</option></select>
+            </div>
+            <div class="field">
+              <label for="f-status">Status</label>
+              <select id="f-status">
+                <option>CRITICAL</option><option>PRIORITY</option><option selected>PROTECT</option>
+                <option>STABLE</option><option>UNSAFE</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-priority">Priority</label>
+              <select id="f-priority"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn" data-close>Cancel</button>
+            <button type="submit" class="btn btn-primary" id="food-submit">Save item</button>
+          </div>
+        </form>
+      </dialog>
+    </main>
+  </div>
+
+  <script>
+  /* ================================================================
+     RAKSHA — shared core (identical block in every page)
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA = window.RAKSHA || {};
+    R.version = '1.1.0-offline';
+
+    R.dispatch = function (name, detail) {
+      window.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
+    };
+    R.onReady = function (fn) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+      else fn();
+    };
+
+    var PATHS = {
+      shield: '<path d="M12 3l7.5 2.8v5.7c0 4.5-3.1 7.7-7.5 9.5-4.4-1.8-7.5-5-7.5-9.5V5.8z"/><path d="M8 12c1.3-1.1 2.7-1.1 4 0s2.7 1.1 4 0"/>',
+      menu: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
+      grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>',
+      box: '<path d="M4 7.8L12 3.5l8 4.3v8.4L12 20.5l-8-4.3z"/><path d="M4 7.8l8 4.3 8-4.3"/><path d="M12 12.1v8.4"/>',
+      bolt: '<path d="M13 3L6.5 13H11l-1 8L16.5 11H12l1-8z"/>',
+      pulse: '<path d="M3 12h4l2.5-6.5 4.5 13 2.5-6.5h4.5"/>',
+      bars: '<path d="M5.5 20v-6"/><path d="M12 20V8.5"/><path d="M18.5 20v-9.5"/><path d="M4 20h16"/>',
+      doc: '<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6"/><path d="M9 12.5h6"/><path d="M9 16.5h3.5"/>',
+      edit: '<path d="M4.5 19.5h4L20 8a2.12 2.12 0 0 0-3-3L5.5 16.5l-1 3z"/><path d="M14.5 6.5l3 3"/>',
+      trash: '<path d="M4.5 7h15"/><path d="M9.5 4.5h5"/><path d="M6.5 7l.9 12.5h9.2L17.5 7"/><path d="M10 11v5.5"/><path d="M14 11v5.5"/>',
+      check: '<path d="M5.5 12.5l4 4 9-9"/>'
+    };
+
+    R.ui = {
+      icon: function (name) {
+        return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + PATHS[name] + '</svg>';
+      },
+      esc: function (s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      },
+      fmtNum: function (n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 }); },
+      fmtQty: function (n, unit) { return R.ui.fmtNum(n) + ' ' + unit; },
+      fmtDate: function (iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        return d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      },
+      debounce: function (fn, ms) {
+        var t; return function () {
+          var a = arguments, c = this; clearTimeout(t);
+          t = setTimeout(function () { fn.apply(c, a); }, ms);
+        };
+      },
+      statusBadge: function (s) { return '<span class="badge st-' + String(s).toLowerCase() + '">' + R.ui.esc(s) + '</span>'; },
+      theme: {
+        categorical: ['#0E7568', '#C7811A', '#41586B', '#6E8B3D', '#A64B3C', '#3E7CA6', '#4C7A5E'],
+        status: { CRITICAL: '#A61B1B', PRIORITY: '#C7811A', PROTECT: '#3E7CA6', STABLE: '#216B44', UNSAFE: '#5C1616' }
+      },
+      _charts: {},
+      initCharts: function () {
+        if (typeof Chart === 'undefined') return false;
+        Chart.defaults.font.family = "'Public Sans', 'Segoe UI', sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#5F7079';
+        Chart.defaults.borderColor = '#E8E3D8';
+        return true;
+      },
+      makeChart: function (canvasId, config) {
+        if (typeof Chart === 'undefined') {
+          var el = document.getElementById(canvasId);
+          if (el && el.parentNode) el.parentNode.innerHTML = '<p class="hint">Chart library not loaded.</p>';
+          return null;
+        }
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+        if (R.ui._charts[canvasId]) { R.ui._charts[canvasId].destroy(); }
+        R.ui._charts[canvasId] = new Chart(canvas.getContext('2d'), config);
+        return R.ui._charts[canvasId];
+      },
+      toast: function (msg, type, ms) {
+        type = type || 'info';
+        var wrap = document.getElementById('ra-toasts');
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.id = 'ra-toasts'; wrap.className = 'toasts';
+          wrap.setAttribute('aria-live', 'polite');
+          document.body.appendChild(wrap);
+        }
+        var t = document.createElement('div');
+        t.className = 'toast t-' + type; t.setAttribute('role', 'status');
+        t.innerHTML = '<span>' + msg + '</span><button class="toast-x" aria-label="Dismiss message">×</button>';
+        var kill = function () { t.classList.add('toast-out'); setTimeout(function () { t.remove(); }, 260); };
+        t.querySelector('.toast-x').addEventListener('click', kill);
+        wrap.appendChild(t);
+        setTimeout(kill, ms || 4600);
+      },
+      confirm: function (opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+          var d = document.getElementById('ra-confirm');
+          d.querySelector('#ra-confirm-title').textContent = opts.title || 'Are you sure?';
+          d.querySelector('#ra-confirm-msg').textContent = opts.message || '';
+          var ok = d.querySelector('#ra-confirm-ok');
+          ok.textContent = opts.confirmLabel || 'Confirm';
+          ok.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary');
+          var onClose = function () { d.removeEventListener('close', onClose); resolve(d.returnValue === 'confirm'); };
+          d.addEventListener('close', onClose);
+          d.showModal();
+        });
+      }
+    };
+
+    var NAV = [
+      { group: 'Community', items: [
+        { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: 'grid' },
+        { key: 'inventory', label: 'Food Inventory', href: 'inventory.html', icon: 'box' },
+        { key: 'resources', label: 'Community Resources', href: 'resources.html', icon: 'bolt' }
+      ]},
+      { group: 'Planning', items: [
+        { key: 'simulator', label: 'Disaster Simulator', href: 'simulator.html', icon: 'pulse' },
+        { key: 'results', label: 'Simulation Results', href: 'results.html', icon: 'bars' },
+        { key: 'plan', label: 'Emergency Plan', href: 'offline-plan.html', icon: 'doc' }
+      ]}
+    ];
+
+    function topbarHTML() {
+      return '' +
+        '<header class="topbar" id="ra-topbar">' +
+          '<button class="icon-btn" id="ra-menu-btn" aria-label="Open navigation menu" aria-expanded="false">' + R.ui.icon('menu') + '</button>' +
+          '<a class="topbar-brand" href="index.html">' +
+            '<span class="brand-mark">' + R.ui.icon('shield') + '</span>' +
+            '<span class="brand-text"><strong>RAKSHA</strong><small>Food resilience · prototype</small></span>' +
+          '</a>' +
+          '<div class="topbar-status">' +
+            '<span class="chip chip-off" id="ra-data-chip" hidden title="Where the data you are viewing comes from">…</span>' +
+            '<span class="chip chip-sync" id="ra-sync-badge" hidden title="Changes waiting to be synchronised">Sync</span>' +
+            '<span class="conn-pill on" id="ra-conn-pill" role="status" aria-live="polite" title="Application connectivity">' +
+              '<span class="conn-dot" aria-hidden="true"></span><span id="ra-conn-label">ONLINE</span>' +
+            '</span>' +
+            '<button class="sim-btn" id="ra-force-offline" data-ra-force-offline type="button" ' +
+              'title="Demo control: makes the app behave as if the internet is unavailable">Simulate Internet Loss</button>' +
+          '</div>' +
+        '</header>';
+    }
+
+    function sidebarHTML() {
+      var page = document.body.getAttribute('data-page');
+      var html = '<nav class="sidebar" id="ra-sidebar" aria-label="Primary navigation">';
+      NAV.forEach(function (g) {
+        html += '<p class="sidebar-label">' + g.group + '</p><ul>';
+        g.items.forEach(function (it) {
+          var active = it.key === page;
+          html += '<li><a class="nav-link' + (active ? ' active' : '') + '" href="' + it.href + '"' +
+            (active ? ' aria-current="page"' : '') + '>' + R.ui.icon(it.icon) + '<span>' + it.label + '</span></a></li>';
+        });
+        html += '</ul>';
+      });
+      html += '<div class="sidebar-foot">' +
+          '<p class="sidebar-note">Prototype decision-support tool. RAKSHA does not guarantee food safety.</p>' +
+          '<p class="sidebar-ver">RAKSHA v' + R.version + '</p>' +
+        '</div></nav>';
+      return html;
+    }
+
+    function renderShell() {
+      var topRoot = document.getElementById('ra-topbar-root');
+      if (topRoot) { topRoot.classList.add('slot-topbar'); topRoot.innerHTML = topbarHTML(); }
+      var sideRoot = document.getElementById('ra-sidebar-root');
+      var hasSidebar = !!sideRoot;
+      document.body.classList.toggle('has-sidebar', hasSidebar);
+      if (sideRoot) {
+        sideRoot.classList.add('slot-sidebar');
+        sideRoot.innerHTML = sidebarHTML();
+        var scrim = document.createElement('div');
+        scrim.className = 'scrim'; scrim.id = 'ra-scrim'; scrim.hidden = true;
+        document.body.appendChild(scrim);
+      }
+      var menuBtn = document.getElementById('ra-menu-btn');
+      var scrimEl = document.getElementById('ra-scrim');
+      if (!hasSidebar && menuBtn) { menuBtn.style.display = 'none'; }
+      function closeSidebar() {
+        document.body.classList.remove('sidebar-open');
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        if (scrimEl) scrimEl.hidden = true;
+      }
+      if (menuBtn && hasSidebar) {
+        menuBtn.addEventListener('click', function () {
+          var open = document.body.classList.toggle('sidebar-open');
+          menuBtn.setAttribute('aria-expanded', String(open));
+          if (scrimEl) scrimEl.hidden = !open;
+        });
+      }
+      if (scrimEl) scrimEl.addEventListener('click', closeSidebar);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) closeSidebar();
+      });
+    }
+
+    function injectConfirmDialog() {
+      if (document.getElementById('ra-confirm')) return;
+      var d = document.createElement('dialog');
+      d.id = 'ra-confirm'; d.className = 'modal modal-sm';
+      d.innerHTML =
+        '<h2 class="confirm-title" id="ra-confirm-title"></h2>' +
+        '<p class="confirm-msg" id="ra-confirm-msg"></p>' +
+        '<div class="modal-actions">' +
+          '<button value="cancel" class="btn">Cancel</button>' +
+          '<button value="confirm" id="ra-confirm-ok" class="btn btn-danger">Confirm</button>' +
+        '</div>';
+      document.body.appendChild(d);
+    }
+
+    function updateDataChip(detail) {
+      var chip = document.getElementById('ra-data-chip');
+      if (!chip) return;
+      var online = R.offline ? R.offline.isOnline() : navigator.onLine;
+      var mode = detail && detail.mode ? detail.mode : (R.api ? R.api.mode : 'demo');
+      chip.hidden = false;
+      if (!online) { chip.className = 'chip chip-off'; chip.textContent = 'OFFLINE DATA'; chip.title = 'No connection — data is served from the offline cache on this device.'; }
+      else if (mode === 'live') { chip.className = 'chip chip-live'; chip.textContent = 'LIVE DATA'; chip.title = 'Connected to the RAKSHA backend.'; }
+      else { chip.className = 'chip chip-demo'; chip.textContent = 'DEMO DATA'; chip.title = 'Backend not connected — running on the built-in demo dataset.'; }
+    }
+
+    function injectDemoBanner(show) {
+      var main = document.getElementById('main');
+      if (!main) return;
+      var b = document.getElementById('ra-demo-banner');
+      if (show) {
+        if (!b) {
+          b = document.createElement('div');
+          b.id = 'ra-demo-banner'; b.className = 'alert alert-warn'; b.setAttribute('role', 'note');
+          b.innerHTML = '<strong>Demo data mode.</strong> The RAKSHA backend is not connected, so this app is running on its built-in demo dataset (Demo Village). Offline edits are queued and will sync when the server is reachable.';
+          main.prepend(b);
+        }
+      } else if (b) { b.remove(); }
+    }
+
+    function registerSW() {
+      if (!('serviceWorker' in navigator)) return;
+      var local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (!(location.protocol === 'https:' || local)) return;
+      navigator.serviceWorker.register('sw.js').catch(function (err) {
+        console.warn('[RAKSHA] Service Worker registration failed:', err);
+      });
+    }
+
+    renderShell();
+    injectConfirmDialog();
+    registerSW();
+    updateDataChip({ mode: 'demo' });
+
+    window.addEventListener('ra:apimode', function (e) {
+      updateDataChip(e.detail);
+      injectDemoBanner(e.detail && e.detail.mode === 'demo');
+    });
+    window.addEventListener('ra:connectivity', function () { updateDataChip(); });
+  })();
+
+  /* ================================================================
+     RAKSHA — API layer for this page (food inventory)
+     Online: LIVE API -> snapshot cache -> demo dataset.
+     Offline: writes are applied to the local snapshot and QUEUED
+     for sync (R.offline.writeQueued) — never faked as server calls.
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA;
+
+    var API_BASE = 'api';
+    var LS_KEY = 'raksha.demo.v1';
+    var DEMO_COMMUNITY_ID = 'comm-demo-001';
+
+    var api = R.api = { mode: 'demo', lastSource: null };
+    var readyPromise = null;
+
+    var SEED_FOOD = [
+      { id: 'food-001', name: 'Cooked food (rice & curry)', category: 'Cooked',     quantity: 30, unit: 'kg', storageType: 'Refrigerated', status: 'PRIORITY',  priority: 'High' },
+      { id: 'food-002', name: 'Milk',                       category: 'Dairy',      quantity: 20, unit: 'L',  storageType: 'Refrigerated', status: 'CRITICAL', priority: 'Critical' },
+      { id: 'food-003', name: 'Fresh vegetables',           category: 'Vegetables', quantity: 40, unit: 'kg', storageType: 'Ambient',      status: 'PROTECT',  priority: 'Medium' },
+      { id: 'food-004', name: 'Meat & fish',                category: 'Meat',       quantity: 20, unit: 'kg', storageType: 'Frozen',       status: 'CRITICAL', priority: 'Critical' },
+      { id: 'food-005', name: 'Frozen food',                category: 'Frozen',     quantity: 30, unit: 'kg', storageType: 'Frozen',       status: 'PRIORITY', priority: 'High' },
+      { id: 'food-006', name: 'Rice & grains',              category: 'Grains',     quantity: 80, unit: 'kg', storageType: 'Ambient',      status: 'STABLE',   priority: 'Low' },
+      { id: 'food-007', name: 'Canned food',                category: 'Canned',     quantity: 50, unit: 'kg', storageType: 'Ambient',      status: 'STABLE',   priority: 'Low' }
+    ];
+
+    var SEED_RESOURCES = [
+      { id: 'res-001', name: 'Refrigerator A', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Community hall – kitchen',    powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: true },
+      { id: 'res-002', name: 'Refrigerator B', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Shelter block C',             powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: false },
+      { id: 'res-003', name: 'Freezer',        type: 'Freezer',      capacity: 40, unit: 'kg',    location: 'Community hall – kitchen',    powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: true },
+      { id: 'res-004', name: 'Cold box',       type: 'Cold box',     capacity: 20, unit: 'kg',    location: 'Mobile / shelter block C',    powerSource: 'Ice',   operationalStatus: 'Operational', availability: 'Available', ownerType: 'NGO',       poweredByGenerator: false },
+      { id: 'res-005', name: 'Generator',      type: 'Generator',    capacity: 1,  unit: 'units', location: 'Community hall',              powerSource: 'Fuel',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community' },
+      { id: 'res-006', name: 'Ice stock',      type: 'Ice supply',   capacity: 20, unit: 'kg',    location: 'Community hall freezer room', powerSource: 'None',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community' }
+    ];
+
+    function loadDemoState() {
+      try {
+        var raw = localStorage.getItem(LS_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return {
+        food: JSON.parse(JSON.stringify(SEED_FOOD)),
+        resources: JSON.parse(JSON.stringify(SEED_RESOURCES)),
+        runs: {}, plans: {}, lastRunId: null, lastPlanRunId: null, seq: 100
+      };
+    }
+    var demo = loadDemoState();
+    function saveDemoState() { try { localStorage.setItem(LS_KEY, JSON.stringify(demo)); } catch (e) { /* ignore */ } }
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+    function fireMode() { R.dispatch('ra:apimode', { mode: api.mode }); }
+
+    function request(method, path, body) {
+      return fetch(API_BASE + path, {
+        method: method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined
+      }).then(function (res) {
+        if (!res.ok) {
+          return res.json().catch(function () { return {}; }).then(function (j) {
+            throw new Error((j && j.error) || ('Request failed (' + res.status + ')'));
+          });
+        }
+        return res.json();
+      });
+    }
+
+    function detectMode() {
+      var offline = R.offline && !R.offline.isOnline();
+      if (offline) { api.mode = 'demo'; fireMode(); return Promise.resolve('demo'); }
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 2500);
+      return fetch(API_BASE + '/health', { signal: ctrl.signal })
+        .then(function (res) { api.mode = res.ok ? 'live' : 'demo'; })
+        .catch(function () { api.mode = 'demo'; })
+        .then(function () { clearTimeout(timer); fireMode(); return api.mode; });
+    }
+    function ensureReady() {
+      if (!readyPromise) readyPromise = detectMode();
+      return readyPromise;
+    }
+    window.addEventListener('ra:connectivity', function (e) {
+      if (e.detail && e.detail.online) readyPromise = null;
+    });
+
+    function readChain(path, snapshotName, demoFn) {
+      return ensureReady().then(function () {
+        var online = R.offline.isOnline();
+        if (online && api.mode === 'live') {
+          return request('GET', path).then(function (data) {
+            api.lastSource = 'live';
+            if (R.offline) R.offline.cacheSnapshot(snapshotName, data);
+            return data;
+          }).catch(function () { api.mode = 'demo'; fireMode(); return fallback(); });
+        }
+        return fallback();
+        function fallback() {
+          var fromDemo = function () {
+            var data = demoFn();
+            api.lastSource = 'demo';
+            if (R.offline && R.offline.isOnline()) R.offline.cacheSnapshot(snapshotName, data);
+            return data;
+          };
+          if (!online && R.offline) {
+            return R.offline.loadSnapshot(snapshotName).then(function (cached) {
+              if (cached != null) { api.lastSource = 'cache'; return cached; }
+              return fromDemo();
+            });
+          }
+          return fromDemo();
+        }
+      });
+    }
+
+    function writeRemote(method, path, body, demoMutator) {
+      return ensureReady().then(function () {
+        if (api.mode === 'live') return request(method, path, body);
+        var result = demoMutator();
+        saveDemoState();
+        return result;
+      });
+    }
+
+    /* OFFLINE WRITE PATH: apply to the local snapshot + queue for sync.
+       (Also mirrors into the demo state when in demo mode, so the page
+       stays consistent if the backend was never connected.) */
+       function offlineWrite(operation, id, data, demoMutator) {
+      /* ★ FIX: include communityId in every queued payload — the server's
+         FoodItem.create() requires it, and the sync controller passes the
+         payload directly to the model. Without this, the sync returns
+         'failed' within a 200 response and the item never reaches MongoDB. */
+      var payload = Object.assign({}, data, { communityId: DEMO_COMMUNITY_ID });
+      var p = R.offline.writeQueued('food_items', operation, id, payload);
+      if (api.mode === 'demo' && demoMutator) {
+        try { demoMutator(); saveDemoState(); } catch (e) { /* ignore */ }
+      }
+      return p;
+    }
+
+    api.getFoodItems = function () {
+      /* GET /api/food-items?communityId=... */
+      return readChain('/food-items?communityId=' + DEMO_COMMUNITY_ID, 'inventory', function () { return clone(demo.food); });
+    };
+    api.createFoodItem = function (data) {
+      /* POST /api/food-items  (online) | queued offline */
+      if (R.offline && !R.offline.isOnline()) {
+        return offlineWrite('create', null, data, function () {
+          var item = Object.assign({ id: 'food-' + (demo.seq++) }, data, { updatedAt: new Date().toISOString() });
+          demo.food.push(item);
+          return clone(item);
+        });
+      }
+      return writeRemote('POST', '/food-items', Object.assign({ communityId: DEMO_COMMUNITY_ID }, data), function () {
+        var item = Object.assign({ id: 'food-' + (demo.seq++) }, data, { updatedAt: new Date().toISOString() });
+        demo.food.push(item);
+        return clone(item);
+      });
+    };
+    api.updateFoodItem = function (id, data) {
+      /* PUT /api/food-items/:id (online) | queued offline */
+      if (R.offline && !R.offline.isOnline()) {
+        return offlineWrite('update', id, data, function () {
+          var item = demo.food.filter(function (f) { return f.id === id; })[0];
+          if (item) Object.assign(item, data, { id: id, updatedAt: new Date().toISOString() });
+          return clone(item || data);
+        });
+      }
+      return writeRemote('PUT', '/food-items/' + id, data, function () {
+        var item = demo.food.filter(function (f) { return f.id === id; })[0];
+        if (!item) throw new Error('Food item not found.');
+        Object.assign(item, data, { id: id, updatedAt: new Date().toISOString() });
+        return clone(item);
+      });
+    };
+    api.deleteFoodItem = function (id) {
+      /* DELETE /api/food-items/:id (online) | queued offline */
+      if (R.offline && !R.offline.isOnline()) {
+        return offlineWrite('delete', id, null, function () {
+          demo.food = demo.food.filter(function (f) { return f.id !== id; });
+          return { ok: true };
+        });
+      }
+      return writeRemote('DELETE', '/food-items/' + id, null, function () {
+        demo.food = demo.food.filter(function (f) { return f.id !== id; });
+        return { ok: true };
+      });
+    };
+
+    api.resetDemoData = function () {
+      try { localStorage.removeItem(LS_KEY); } catch (e) { /* ignore */ }
+      location.reload();
+    };
+  })();
+
+  /* ================================================================
+     RAKSHA — inventory controller
+     Offline-aware: pending-sync chips on rows, "queued" toasts.
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA;
+    var api = R.api, ui = R.ui;
+
+    function prioBadge(p) { return '<span class="badge prio-' + String(p).toLowerCase() + '">' + ui.esc(p) + '</span>'; }
+
+    var items = [];
+    var filters = { q: '', category: '', status: '' };
+    var editingId = null;
+    var dialog = document.getElementById('food-dialog');
+    var form = document.getElementById('food-form');
+    var pending = {};   // recordId -> queued sync op (filled before each render)
+
+    function filtered() {
+      return items.filter(function (f) {
+        if (filters.category && f.category !== filters.category) return false;
+        if (filters.status && f.status !== filters.status) return false;
+        if (filters.q && f.name.toLowerCase().indexOf(filters.q.toLowerCase()) === -1) return false;
+        return true;
+      });
+    }
+
+    function pendingChip(op) {
+      if (!op) return '';
+      var label = op.status === 'conflict' ? 'sync conflict' : (op.operation === 'create' ? 'new · pending sync' : op.operation + ' · pending sync');
+      return '<span class="ra-pending-chip">' + ui.esc(label) + '</span>';
+    }
+
+    function render() {
+      var list = filtered();
+      var tbody = document.getElementById('food-tbody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="hint" style="text-align:center;padding:28px">' +
+          'No food items match your filters.</td></tr>';
+      } else {
+        tbody.innerHTML = list.map(function (f) {
+          var op = pending[f.id];
+          return '<tr>' +
+            '<td data-label="Food"><span class="cell-strong">' + ui.esc(f.name) + '</span>' + pendingChip(op) + '</td>' +
+            '<td data-label="Category">' + ui.esc(f.category) + '</td>' +
+            '<td data-label="Quantity" class="num">' + ui.fmtNum(f.quantity) + '</td>' +
+            '<td data-label="Unit">' + ui.esc(f.unit) + '</td>' +
+            '<td data-label="Storage type">' + ui.esc(f.storageType) + '</td>' +
+            '<td data-label="Status">' + ui.statusBadge(f.status) + '</td>' +
+            '<td data-label="Priority">' + prioBadge(f.priority) + '</td>' +
+            '<td data-label="Actions"><div class="row-actions">' +
+              '<button class="btn btn-sm act-edit" data-id="' + ui.esc(f.id) + '">' + ui.icon('edit') + 'Edit</button>' +
+              '<button class="btn btn-sm btn-danger-ghost act-del" data-id="' + ui.esc(f.id) + '">' + ui.icon('trash') + 'Delete</button>' +
+            '</div></td></tr>';
+        }).join('');
+      }
+
+      var kg = 0, litres = 0;
+      list.forEach(function (f) {
+        if (f.unit === 'kg') kg += f.quantity;
+        else if (f.unit === 'L') litres += f.quantity;
+      });
+      var totals = [kg ? ui.fmtNum(kg) + ' kg' : '', litres ? ui.fmtNum(litres) + ' L' : '']
+        .filter(Boolean).join(' · ') || '0 kg';
+      var queued = Object.keys(pending).length;
+      document.getElementById('inv-count').textContent =
+        'Showing ' + list.length + ' of ' + items.length + ' items · ' + totals +
+        (queued ? ' · ' + queued + ' queued offline' : '');
+      document.getElementById('inv-meta').textContent =
+        items.length + ' food items recorded for this community' +
+        (!R.offline.isOnline() ? ' · offline (cached + queued edits)' : '');
+    }
+
+    function openDialog(item) {
+      editingId = item ? item.id : null;
+      document.getElementById('food-dialog-title').textContent = item ? 'Edit food item' : 'Add food item';
+      document.getElementById('food-submit').textContent = item ? 'Save changes' : 'Save item';
+      document.getElementById('f-name').value = item ? item.name : '';
+      document.getElementById('f-category').value = item ? item.category : 'Vegetables';
+      document.getElementById('f-storage').value = item ? item.storageType : 'Ambient';
+      document.getElementById('f-qty').value = item ? item.quantity : '';
+      document.getElementById('f-unit').value = item ? item.unit : 'kg';
+      document.getElementById('f-status').value = item ? item.status : 'PROTECT';
+      document.getElementById('f-priority').value = item ? item.priority : 'Medium';
+      dialog.showModal();
+      document.getElementById('f-name').focus();
+    }
+
+    function load() {
+      var pendingPromise = (R.sync && R.sync.pendingByCollection)
+        ? R.sync.pendingByCollection('food_items')
+        : Promise.resolve({});
+      return Promise.all([api.getFoodItems(), pendingPromise]).then(function (r) {
+        items = r[0];
+        pending = r[1];
+        render();
+      });
+    }
+
+    R.onReady(function () {
+      document.getElementById('btn-add-food').addEventListener('click', function () { openDialog(null); });
+
+      document.getElementById('inv-search').addEventListener('input', ui.debounce(function (e) {
+        filters.q = e.target.value.trim(); render();
+      }, 180));
+      document.getElementById('inv-cat').addEventListener('change', function (e) { filters.category = e.target.value; render(); });
+      document.getElementById('inv-status').addEventListener('change', function (e) { filters.status = e.target.value; render(); });
+
+      dialog.querySelectorAll('[data-close]').forEach(function (b) {
+        b.addEventListener('click', function () { dialog.close(); });
+      });
+      dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!form.checkValidity()) { form.reportValidity(); return; }
+        var payload = {
+          name: document.getElementById('f-name').value.trim(),
+          category: document.getElementById('f-category').value,
+          storageType: document.getElementById('f-storage').value,
+          quantity: Number(document.getElementById('f-qty').value),
+          unit: document.getElementById('f-unit').value,
+          status: document.getElementById('f-status').value,
+          priority: document.getElementById('f-priority').value,
+          updatedAt: new Date().toISOString()
+        };
+        var submitBtn = document.getElementById('food-submit');
+        submitBtn.classList.add('is-busy');
+        var op = editingId ? api.updateFoodItem(editingId, payload) : api.createFoodItem(payload);
+        op.then(function () {
+          dialog.close();
+          if (!R.offline.isOnline()) {
+            ui.toast('“' + payload.name + '” saved offline — queued for sync. It will reach MongoDB when the connection returns.', 'warn');
+          } else {
+            ui.toast('“' + payload.name + '” ' + (editingId ? 'updated' : 'added to the inventory') + '.', 'success');
+          }
+          return load();
+        }).catch(function (err) {
+          ui.toast(err.message, 'error');
+        }).finally(function () { submitBtn.classList.remove('is-busy'); });
+      });
+
+      document.getElementById('food-tbody').addEventListener('click', function (e) {
+        var editBtn = e.target.closest('.act-edit');
+        var delBtn = e.target.closest('.act-del');
+        if (editBtn) {
+          var item = items.filter(function (f) { return f.id === editBtn.getAttribute('data-id'); })[0];
+          if (item) openDialog(item);
+        } else if (delBtn) {
+          var id = delBtn.getAttribute('data-id');
+          var target = items.filter(function (f) { return f.id === id; })[0];
+          if (!target) return;
+          ui.confirm({
+            title: 'Delete food item?',
+            message: '“' + target.name + '” will be removed' +
+              (!R.offline.isOnline() ? ' locally and the deletion queued for sync' : '') +
+              '. This cannot be undone.',
+            confirmLabel: 'Delete', danger: true
+          }).then(function (ok) {
+            if (!ok) return;
+            api.deleteFoodItem(id).then(function () {
+              ui.toast(!R.offline.isOnline()
+                ? '“' + target.name + '” deleted offline — deletion queued for sync.'
+                : '“' + target.name + '” deleted.', !R.offline.isOnline() ? 'warn' : 'success');
+              return load();
+            }).catch(function (err) { ui.toast(err.message, 'error'); });
+          });
+        }
+      });
+
+      window.addEventListener('ra:sync-queue', function () { load(); });
+
+      load().catch(function (err) { ui.toast('Could not load inventory: ' + err.message, 'error'); });
+    });
+  })();
+  </script>
+
+  <!-- Shared offline + sync layers (loaded after the page script) -->
+  <script src="js/offline.js"></script>
+  <script src="js/sync.js"></script>
+</body>
+</html>

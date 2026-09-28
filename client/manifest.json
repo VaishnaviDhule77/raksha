@@ -1,0 +1,14 @@
+﻿{
+  "name": "RAKSHA — Resilient Adaptive Kitchen & Storage Hazard Assistant",
+  "short_name": "RAKSHA",
+  "description": "Prototype decision-support tool for community food-resilience planning. Works offline: cached community data, the latest simulation and the emergency action plan remain available when internet connectivity is lost.",
+  "start_url": "./dashboard.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0F212B",
+  "theme_color": "#0F212B",
+  "icons": [
+    { "src": "./icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Emergency Plan · RAKSHA</title>
+  <meta name="description" content="RAKSHA emergency food resilience plan — cached and printable.">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0F212B">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <style>
+    /* ============ RAKSHA emergency plan — self-contained styles ============ */
+    @font-face { font-family: 'Sora'; src: url('fonts/sora-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Sora'; src: url('fonts/sora-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
+    @font-face { font-family: 'Public Sans'; src: url('fonts/public-sans-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
+
+    :root {
+      --bg: #F4F1EA; --surface: #FFFFFF; --surface-2: #FAF8F2;
+      --ink: #182830; --ink-2: #3D4E58; --muted: #5F7079;
+      --line: #E3DFD4; --line-strong: #CFC9BA;
+      --brand: #0E7568; --brand-strong: #0B5E53; --brand-soft: #E9F2EF;
+      --amber: #9A5B00; --amber-soft: #FBEFDD;
+      --red: #A61B1B; --red-soft: #FBE7E4;
+      --green: #216B44; --green-soft: #E2F0E6;
+      --slate: #41586B; --slate-soft: #E8EDF2;
+      --unsafe: #5C1616; --unsafe-soft: #EFD9D6;
+      --frame: #0F212B; --frame-line: #23414F; --frame-text: #C6D4DC;
+      --radius: 12px; --radius-sm: 8px;
+      --shadow-1: 0 1px 2px rgba(23,40,48,.06), 0 1px 3px rgba(23,40,48,.08);
+      --shadow-2: 0 4px 10px rgba(23,40,48,.08), 0 14px 36px rgba(23,40,48,.12);
+      --font-display: 'Sora', 'Trebuchet MS', 'Segoe UI', sans-serif;
+      --font-body: 'Public Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      --topbar-h: 58px; --sidebar-w: 264px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; font-family: var(--font-body); font-size: 14.5px; line-height: 1.55; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+    h1, h2, h3, h4 { font-family: var(--font-display); margin: 0; }
+    p { margin: 0; }
+    ul, ol { margin: 0; padding: 0; }
+    a { color: var(--brand); }
+    a:hover { color: var(--brand-strong); }
+    .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .skip-link { position: absolute; left: 12px; top: -48px; z-index: 200; background: var(--frame); color: #fff; padding: 10px 16px; border-radius: 8px; text-decoration: none; transition: top .15s ease; }
+    .skip-link:focus { top: 12px; color: #fff; }
+    :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+    /* shell */
+    .app { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: auto 1fr; grid-template-areas: "topbar topbar" "sidebar main"; min-height: 100vh; }
+    .slot-topbar { grid-area: topbar; }
+    .slot-sidebar { grid-area: sidebar; }
+    .topbar { position: sticky; top: 0; z-index: 60; display: flex; align-items: center; gap: 16px; height: var(--topbar-h); padding: 0 20px; background: var(--frame); color: #E7EEF2; border-bottom: 1px solid var(--frame-line); }
+    .topbar-brand { display: flex; align-items: center; gap: 11px; color: #fff; text-decoration: none; margin-right: auto; }
+    .brand-mark { width: 32px; height: 32px; border-radius: 9px; flex: none; background: var(--brand); color: #fff; display: grid; place-items: center; }
+    .brand-mark svg { width: 19px; height: 19px; }
+    .brand-text strong { display: block; font: 700 14.5px var(--font-display); letter-spacing: .14em; }
+    .brand-text small { display: block; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: #93A6B1; }
+    .topbar-status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .icon-btn { display: none; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 9px; background: transparent; border: 1px solid var(--frame-line); color: var(--frame-text); cursor: pointer; }
+    .icon-btn svg { width: 19px; height: 19px; }
+    .icon-btn:hover { color: #fff; border-color: #35586B; }
+    .chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .chip-live   { background: rgba(64,178,122,.18); color: #8FE3B0; }
+    .chip-demo   { background: rgba(199,129,26,.22); color: #E8B36A; }
+    .chip-off    { background: rgba(120,144,160,.2); color: #AFC2CD; }
+    .chip-sync   { background: rgba(199,129,26,.22); color: #E8B36A; }
+    .conn-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; letter-spacing: .07em; }
+    .conn-pill .conn-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .conn-pill.on  { background: rgba(64,178,122,.16); color: #8FE3B0; }
+    .conn-pill.on .conn-dot { background: #43C06E; box-shadow: 0 0 0 3px rgba(67,192,110,.18); }
+    .conn-pill.off { background: rgba(214,69,56,.18); color: #F1A29B; }
+    .conn-pill.off .conn-dot { background: #E4574B; box-shadow: 0 0 0 3px rgba(228,87,75,.18); }
+    .conn-pill .sim-tag { font-style: normal; font-size: 9.5px; letter-spacing: .1em; border: 1px solid currentColor; border-radius: 4px; padding: 1px 5px; opacity: .85; }
+    .sim-btn { background: transparent; border: 1px solid var(--frame-line); color: var(--frame-text); border-radius: 8px; padding: 7px 11px; font: 600 11.5px var(--font-body); letter-spacing: .03em; cursor: pointer; }
+    .sim-btn:hover { color: #fff; border-color: #35586B; }
+    .sim-btn.active { border-color: #E4574B; color: #F1A29B; }
+    .sidebar { display: flex; flex-direction: column; gap: 4px; background: var(--frame); border-right: 1px solid var(--frame-line); padding: 18px 14px 16px; position: sticky; top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); overflow-y: auto; }
+    .sidebar-label { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #7A93A1; margin: 10px 12px 6px; }
+    .sidebar-label:first-child { margin-top: 0; }
+    .nav-link { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px; text-decoration: none; color: var(--frame-text); font-weight: 500; font-size: 14px; }
+    .nav-link:hover { background: rgba(255,255,255,.05); color: #fff; }
+    .nav-link.active { background: rgba(20,148,132,.22); color: #fff; box-shadow: inset 3px 0 0 0 #2FBFA8; }
+    .nav-link svg { width: 19px; height: 19px; flex: none; }
+    .sidebar-foot { margin-top: auto; padding: 14px 12px 0; border-top: 1px solid var(--frame-line); }
+    .sidebar-note { font-size: 11.5px; color: #8FA3AE; line-height: 1.5; }
+    .sidebar-ver { font-size: 10.5px; color: #637885; margin-top: 6px; letter-spacing: .05em; }
+    .scrim { position: fixed; inset: var(--topbar-h) 0 0 0; background: rgba(10,20,26,.55); z-index: 65; }
+    .main { padding: 28px 34px 64px; min-width: 0; }
+    .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 22px; flex-wrap: wrap; }
+    .eyebrow { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--brand); margin-bottom: 5px; }
+    .page-head h1 { font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+    .page-sub { color: var(--muted); font-size: 14px; margin-top: 4px; max-width: 640px; }
+    .page-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* buttons & misc components */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 16px; border-radius: 9px; cursor: pointer; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: 600 13.5px var(--font-body); text-decoration: none; transition: background .12s ease, border-color .12s ease, transform .05s ease; }
+    .btn:hover { background: #FBFAF6; border-color: #B9B29E; color: var(--ink); }
+    .btn:active { transform: translateY(1px); }
+    .btn svg { width: 15px; height: 15px; }
+    .btn-primary { background: var(--brand); border-color: var(--brand-strong); color: #fff; }
+    .btn-primary:hover { background: var(--brand-strong); border-color: var(--brand-strong); color: #fff; }
+    .btn-danger { background: var(--red); border-color: var(--red); color: #fff; }
+    .btn.is-gated { opacity: .4; cursor: not-allowed; filter: saturate(.35); }
+    .btn.is-busy { pointer-events: none; opacity: .65; }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 7px; line-height: 1.5; }
+    .disclaimer { font-size: 11.5px; color: var(--muted); line-height: 1.5; border-top: 1px dashed var(--line-strong); padding-top: 10px; margin-top: 12px; width: 100%; }
+
+    /* badges & tiers */
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; white-space: nowrap; }
+    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .75; }
+    .st-critical { background: var(--red-soft); color: var(--red); }
+    .st-priority { background: var(--amber-soft); color: var(--amber); }
+    .st-protect  { background: var(--slate-soft); color: var(--slate); }
+    .st-stable   { background: var(--green-soft); color: var(--green); }
+    .st-unsafe   { background: var(--unsafe-soft); color: var(--unsafe); }
+    .sev-high   { background: var(--red-soft); color: var(--red); }
+    .sev-medium { background: var(--amber-soft); color: var(--amber); }
+    .sev-low    { background: var(--slate-soft); color: var(--slate); }
+    .tier { display: inline-flex; justify-content: center; min-width: 34px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; }
+    .p1 { background: var(--red-soft); color: var(--red); }
+    .p2 { background: var(--amber-soft); color: var(--amber); }
+    .p3 { background: var(--slate-soft); color: var(--slate); }
+
+    /* tables */
+    .table-wrap { overflow-x: auto; }
+    .table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .table th { font: 700 11px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: left; padding: 11px 13px; border-bottom: 1px solid var(--line-strong); background: var(--surface-2); white-space: nowrap; }
+    .table td { padding: 11px 13px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .table tbody tr:last-child td { border-bottom: 0; }
+    .cell-strong { font-weight: 600; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* util bars */
+    .util { display: flex; align-items: center; gap: 9px; min-width: 120px; }
+    .util-track { flex: 1; height: 8px; min-width: 70px; background: #EEE9DC; border-radius: 99px; overflow: hidden; }
+    .util-fill { display: block; height: 100%; border-radius: 99px; background: var(--brand); }
+    .util-fill.warn { background: var(--amber); }
+    .util-fill.none { background: var(--line-strong); }
+    .util-pct { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; width: 34px; }
+
+    /* gap & action lists */
+    .gap-list { list-style: none; display: grid; gap: 12px; }
+    .gap-item { display: flex; gap: 12px; align-items: flex-start; }
+    .gap-body strong { display: block; font-size: 13.5px; margin-bottom: 2px; }
+    .gap-body span { font-size: 12.5px; color: var(--muted); }
+    .action-list { list-style: none; display: grid; gap: 2px; }
+    .action-item { display: flex; gap: 13px; padding: 12px 2px; border-bottom: 1px dashed var(--line); }
+    .action-item:last-child { border-bottom: 0; }
+    .action-body strong { display: block; font-size: 13.5px; margin-bottom: 2px; }
+    .action-body p { font-size: 12.5px; color: var(--muted); }
+    .action-time { font-size: 11.5px; color: var(--slate); font-weight: 600; margin-top: 3px; display: inline-block; }
+
+    /* empty state */
+    .empty-state { text-align: center; padding: 64px 24px; border: 1.5px dashed var(--line-strong); border-radius: 14px; background: var(--surface-2); }
+    .empty-state h2 { font-size: 19px; margin-bottom: 8px; }
+    .empty-state p { color: var(--muted); margin-bottom: 18px; }
+    .empty-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    /* injected confirm dialog (safety) */
+    dialog.modal { border: 0; border-radius: 14px; box-shadow: var(--shadow-2); padding: 0; width: min(580px, calc(100vw - 32px)); color: var(--ink); background: var(--surface); }
+    dialog.modal::backdrop { background: rgba(15,33,43,.55); backdrop-filter: blur(2px); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 13px 20px; border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 14px 14px; }
+    .modal-sm { width: min(430px, calc(100vw - 32px)); }
+    .confirm-title { font-size: 15.5px; padding: 18px 20px 6px; }
+    .confirm-msg { padding: 0 20px 4px; color: var(--ink-2); font-size: 13.5px; }
+
+    /* toasts, alerts, offline banner */
+    .toasts { position: fixed; right: 18px; bottom: 18px; z-index: 130; display: flex; flex-direction: column; gap: 10px; max-width: min(380px, calc(100vw - 36px)); }
+    .toast { display: flex; align-items: flex-start; gap: 12px; background: var(--frame); color: #EDF3F6; padding: 12px 14px; border-radius: 10px; box-shadow: var(--shadow-2); border-left: 3px solid var(--brand); font-size: 13px; line-height: 1.5; animation: toast-in .22s ease; }
+    .toast.t-success { border-left-color: #43C06E; }
+    .toast.t-warn { border-left-color: #E0A23C; }
+    .toast.t-error { border-left-color: #E4574B; }
+    .toast-x { background: none; border: 0; color: #9FB2BC; cursor: pointer; padding: 2px; line-height: 1; font-size: 15px; }
+    .toast-x:hover { color: #fff; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
+    .toast.toast-out { opacity: 0; transition: opacity .25s ease; }
+    .alert { display: block; padding: 12px 16px; border-radius: 10px; border: 1px solid transparent; font-size: 13px; margin-bottom: 16px; line-height: 1.55; }
+    .alert-info   { background: #EAF2F0; border-color: #BFD8D1; color: #0B5E53; }
+    .alert-warn { background: var(--amber-soft); border-color: #E7CFA9; color: #7A4A05; }
+    .offline-banner { background: #6B241C; color: #F6E2DD; border-left: 4px solid #E4574B; border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; }
+    .offline-banner strong { letter-spacing: .04em; }
+    .offline-banner .ob-list { margin-top: 5px; font-size: 12.5px; color: #EFCFC8; }
+    .offline-banner .ob-list span { font-weight: 700; color: #F6E2DD; }
+    .ic { width: 16px; height: 16px; flex: none; }
+
+    /* plan document composition */
+    .plan-doc { max-width: 880px; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow-1); padding: 36px 42px; }
+    .plan-head { display: flex; gap: 16px; align-items: center; border-bottom: 3px solid var(--brand); padding-bottom: 18px; }
+    .plan-mark { width: 48px; height: 48px; border-radius: 12px; flex: none; background: var(--frame); color: #6FC7B4; display: grid; place-items: center; }
+    .plan-mark svg { width: 27px; height: 27px; }
+    .plan-title { font-size: 20px; letter-spacing: .01em; }
+    .plan-tagline { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .plan-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 18px; margin: 20px 0 6px; }
+    .plan-meta dt { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+    .plan-meta dd { margin: 3px 0 0; font: 600 13.5px var(--font-display); }
+    .plan-sec { margin-top: 28px; }
+    .plan-sec h3 { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; border-bottom: 1px solid var(--line); padding-bottom: 9px; margin-bottom: 13px; }
+    .plan-notes { min-height: 110px; }
+    .notes-print { display: none; white-space: pre-wrap; font-size: 13px; }
+    .plan-foot { margin-top: 34px; border-top: 1px solid var(--line); padding-top: 14px; font-size: 11.5px; color: var(--muted); }
+    .plan-foot .disclaimer { border-top: 0; margin-top: 6px; padding-top: 0; }
+
+    /* responsive */
+    @media (max-width: 1080px) {
+      .icon-btn { display: inline-flex; }
+      .app { grid-template-columns: 1fr; grid-template-areas: "topbar" "main"; }
+      .sidebar { position: fixed; top: var(--topbar-h); left: 0; bottom: 0; z-index: 70; width: 282px; height: auto; transform: translateX(-105%); transition: transform .24s ease; }
+      body.sidebar-open .sidebar { transform: translateX(0); box-shadow: var(--shadow-2); }
+      .plan-meta { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 860px) { .main { padding: 22px 20px 56px; } }
+    @media (max-width: 720px) {
+      .page-head { flex-direction: column; align-items: flex-start; }
+      .brand-text small { display: none; }
+      .plan-doc { padding: 22px 18px; }
+      .table thead { display: none; }
+      .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+      .table tr { border: 1px solid var(--line); border-radius: 10px; margin: 0 6px 10px; padding: 6px 14px; background: var(--surface); }
+      .table td { display: flex; justify-content: space-between; align-items: center; gap: 16px; border: 0; border-bottom: 1px dashed var(--line); padding: 8px 0; text-align: right; }
+      .table td:last-child { border-bottom: 0; }
+      .table td::before { content: attr(data-label); font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); text-align: left; }
+    }
+    @media (max-width: 520px) { .sim-btn { display: none; } .topbar { gap: 10px; padding: 0 14px; } }
+
+    /* print: emergency plan only */
+    @media print {
+      body { background: #fff; font-size: 12px; }
+      .app { display: block; }
+      .topbar, .sidebar, .scrim, .toasts, .page-head, .offline-banner, .alert,
+      .notes-status, .skip-link, #plan-alerts { display: none !important; }
+      .main { padding: 0; }
+      .plan-doc { max-width: 100%; border: 0; box-shadow: none; border-radius: 0; padding: 0; }
+      .plan-sec { break-inside: avoid; }
+      .plan-notes { display: none; }
+      .notes-print { display: block; }
+      a { color: inherit; text-decoration: none; }
+      .badge, .tier { border: 1px solid currentColor; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body data-page="plan">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="app">
+    <div id="ra-topbar-root"></div>
+    <div id="ra-sidebar-root"></div>
+
+    <main id="main" class="main">
+      <section class="page-head">
+        <div>
+          <p class="eyebrow">Emergency plan</p>
+          <h1>Emergency food resilience plan</h1>
+          <p class="page-sub" id="plan-sub">Loading…</p>
+        </div>
+        <div class="page-actions">
+          <a class="btn" href="dashboard.html">Back to Dashboard</a>
+          <button class="btn" id="btn-print" type="button">Print Plan</button>
+          <button class="btn btn-primary" id="btn-save-offline" type="button">Save Offline</button>
+        </div>
+      </section>
+
+      <div id="plan-alerts"></div>
+
+      <article class="plan-doc" id="plan-doc" hidden>
+        <header class="plan-head">
+          <span class="plan-mark" id="plan-mark"></span>
+          <div>
+            <h2 class="plan-title">RAKSHA EMERGENCY FOOD RESILIENCE PLAN</h2>
+            <p class="plan-tagline">Resilient Adaptive Kitchen &amp; Storage Hazard Assistant · Community prototype</p>
+          </div>
+        </header>
+        <dl class="plan-meta">
+          <div><dt>Community</dt><dd id="pm-community">—</dd></div>
+          <div><dt>Scenario</dt><dd id="pm-scenario">—</dd></div>
+          <div><dt>Power</dt><dd id="pm-power">—</dd></div>
+          <div><dt>Internet</dt><dd id="pm-internet">—</dd></div>
+          <div><dt>Duration</dt><dd id="pm-duration">—</dd></div>
+          <div><dt>Ambient</dt><dd id="pm-temp">—</dd></div>
+          <div><dt>Generated</dt><dd id="pm-generated">—</dd></div>
+        </dl>
+
+        <section class="plan-sec">
+          <h3>1 · Priority actions</h3>
+          <ol class="action-list" id="plan-actions"></ol>
+        </section>
+
+        <section class="plan-sec">
+          <h3>2 · Critical food actions</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="sr-only">Critical food items and required actions</caption>
+              <thead><tr><th scope="col">Food</th><th scope="col">Quantity</th><th scope="col">Status</th><th scope="col">Action</th><th scope="col">Rule</th></tr></thead>
+              <tbody id="plan-critical-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="plan-sec">
+          <h3>3 · Available resources</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="sr-only">Community resources available during the emergency</caption>
+              <thead><tr><th scope="col">Resource</th><th scope="col">Type</th><th scope="col">Capacity</th><th scope="col">Power</th><th scope="col">Status</th><th scope="col">Owner</th></tr></thead>
+              <tbody id="plan-resources-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="plan-sec">
+          <h3>4 · Storage allocation</h3>
+          <div class="table-wrap">
+            <table class="table">
+              <caption class="sr-only">Recommended storage allocation</caption>
+              <thead><tr><th scope="col">Resource</th><th scope="col">Powered by</th><th scope="col">Load</th><th scope="col">Items</th></tr></thead>
+              <tbody id="plan-alloc-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="plan-sec">
+          <h3>5 · Preparedness gaps</h3>
+          <ul class="gap-list" id="plan-gaps"></ul>
+        </section>
+
+        <section class="plan-sec">
+          <h3>6 · Emergency notes</h3>
+          <textarea id="plan-notes" class="plan-notes" placeholder="Coordinator notes — e.g. who holds keys, fuel arrangements, shelter contacts. Saved locally on this device and available offline."></textarea>
+          <div class="notes-print" id="notes-print"></div>
+          <p class="hint" id="notes-status">Notes are stored locally (IndexedDB) and work offline.</p>
+        </section>
+
+        <footer class="plan-foot">
+          <p>Generated by RAKSHA — prototype decision-support tool for community food-resilience planning.</p>
+          <p class="disclaimer" id="plan-disclaimer">This plan does not guarantee food safety. It has not been tested in a real disaster.
+            Follow instructions from local authorities and the configured, source-backed food-safety guidance referenced above.</p>
+        </footer>
+      </article>
+
+      <section class="empty-state" id="plan-empty" hidden>
+        <h2>No emergency plan yet</h2>
+        <p>Run a simulation and generate the plan — it will then be available here, online or offline.</p>
+        <div class="empty-cta">
+          <a class="btn btn-primary" href="simulator.html">Open the simulator</a>
+          <a class="btn" href="results.html">View latest results</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+  /* ================================================================
+     RAKSHA — shared core (identical block in every page)
+     The offline + sync layers live in js/offline.js and js/sync.js,
+     loaded after this script.
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA = window.RAKSHA || {};
+    R.version = '1.1.0-offline';
+
+    R.dispatch = function (name, detail) {
+      window.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
+    };
+    R.onReady = function (fn) {
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn);
+      else fn();
+    };
+
+    var PATHS = {
+      shield: '<path d="M12 3l7.5 2.8v5.7c0 4.5-3.1 7.7-7.5 9.5-4.4-1.8-7.5-5-7.5-9.5V5.8z"/><path d="M8 12c1.3-1.1 2.7-1.1 4 0s2.7 1.1 4 0"/>',
+      menu: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
+      grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>',
+      box: '<path d="M4 7.8L12 3.5l8 4.3v8.4L12 20.5l-8-4.3z"/><path d="M4 7.8l8 4.3 8-4.3"/><path d="M12 12.1v8.4"/>',
+      bolt: '<path d="M13 3L6.5 13H11l-1 8L16.5 11H12l1-8z"/>',
+      pulse: '<path d="M3 12h4l2.5-6.5 4.5 13 2.5-6.5h4.5"/>',
+      bars: '<path d="M5.5 20v-6"/><path d="M12 20V8.5"/><path d="M18.5 20v-9.5"/><path d="M4 20h16"/>',
+      doc: '<rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M9 8.5h6"/><path d="M9 12.5h6"/><path d="M9 16.5h3.5"/>',
+      edit: '<path d="M4.5 19.5h4L20 8a2.12 2.12 0 0 0-3-3L5.5 16.5l-1 3z"/><path d="M14.5 6.5l3 3"/>',
+      trash: '<path d="M4.5 7h15"/><path d="M9.5 4.5h5"/><path d="M6.5 7l.9 12.5h9.2L17.5 7"/><path d="M10 11v5.5"/><path d="M14 11v5.5"/>',
+      check: '<path d="M5.5 12.5l4 4 9-9"/>'
+    };
+
+    R.ui = {
+      icon: function (name) {
+        return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + PATHS[name] + '</svg>';
+      },
+      esc: function (s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      },
+      fmtNum: function (n) { return Number(n).toLocaleString(undefined, { maximumFractionDigits: 1 }); },
+      fmtQty: function (n, unit) { return R.ui.fmtNum(n) + ' ' + unit; },
+      fmtDate: function (iso) {
+        if (!iso) return '—';
+        var d = new Date(iso);
+        return d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      },
+      debounce: function (fn, ms) {
+        var t; return function () {
+          var a = arguments, c = this; clearTimeout(t);
+          t = setTimeout(function () { fn.apply(c, a); }, ms);
+        };
+      },
+      statusBadge: function (s) { return '<span class="badge st-' + String(s).toLowerCase() + '">' + R.ui.esc(s) + '</span>'; },
+      theme: {
+        categorical: ['#0E7568', '#C7811A', '#41586B', '#6E8B3D', '#A64B3C', '#3E7CA6', '#4C7A5E'],
+        status: { CRITICAL: '#A61B1B', PRIORITY: '#C7811A', PROTECT: '#3E7CA6', STABLE: '#216B44', UNSAFE: '#5C1616' }
+      },
+      _charts: {},
+      initCharts: function () {
+        if (typeof Chart === 'undefined') return false;
+        Chart.defaults.font.family = "'Public Sans', 'Segoe UI', sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#5F7079';
+        Chart.defaults.borderColor = '#E8E3D8';
+        return true;
+      },
+      makeChart: function (canvasId, config) {
+        if (typeof Chart === 'undefined') {
+          var el = document.getElementById(canvasId);
+          if (el && el.parentNode) el.parentNode.innerHTML =
+            '<p class="hint">Chart library not loaded — run the vendor setup command.</p>';
+          return null;
+        }
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return null;
+        if (R.ui._charts[canvasId]) { R.ui._charts[canvasId].destroy(); }
+        R.ui._charts[canvasId] = new Chart(canvas.getContext('2d'), config);
+        return R.ui._charts[canvasId];
+      },
+      toast: function (msg, type, ms) {
+        type = type || 'info';
+        var wrap = document.getElementById('ra-toasts');
+        if (!wrap) {
+          wrap = document.createElement('div');
+          wrap.id = 'ra-toasts'; wrap.className = 'toasts';
+          wrap.setAttribute('aria-live', 'polite');
+          document.body.appendChild(wrap);
+        }
+        var t = document.createElement('div');
+        t.className = 'toast t-' + type; t.setAttribute('role', 'status');
+        t.innerHTML = '<span>' + msg + '</span><button class="toast-x" aria-label="Dismiss message">×</button>';
+        var kill = function () {
+          t.classList.add('toast-out');
+          setTimeout(function () { t.remove(); }, 260);
+        };
+        t.querySelector('.toast-x').addEventListener('click', kill);
+        wrap.appendChild(t);
+        setTimeout(kill, ms || 4600);
+      },
+      confirm: function (opts) {
+        opts = opts || {};
+        return new Promise(function (resolve) {
+          var d = document.getElementById('ra-confirm');
+          d.querySelector('#ra-confirm-title').textContent = opts.title || 'Are you sure?';
+          d.querySelector('#ra-confirm-msg').textContent = opts.message || '';
+          var ok = d.querySelector('#ra-confirm-ok');
+          ok.textContent = opts.confirmLabel || 'Confirm';
+          ok.className = 'btn ' + (opts.danger ? 'btn-danger' : 'btn-primary');
+          var onClose = function () {
+            d.removeEventListener('close', onClose);
+            resolve(d.returnValue === 'confirm');
+          };
+          d.addEventListener('close', onClose);
+          d.showModal();
+        });
+      }
+    };
+
+    var NAV = [
+      { group: 'Community', items: [
+        { key: 'dashboard', label: 'Dashboard', href: 'dashboard.html', icon: 'grid' },
+        { key: 'inventory', label: 'Food Inventory', href: 'inventory.html', icon: 'box' },
+        { key: 'resources', label: 'Community Resources', href: 'resources.html', icon: 'bolt' }
+      ]},
+      { group: 'Planning', items: [
+        { key: 'simulator', label: 'Disaster Simulator', href: 'simulator.html', icon: 'pulse' },
+        { key: 'results', label: 'Simulation Results', href: 'results.html', icon: 'bars' },
+        { key: 'plan', label: 'Emergency Plan', href: 'offline-plan.html', icon: 'doc' }
+      ]}
+    ];
+
+    function topbarHTML() {
+      return '' +
+        '<header class="topbar" id="ra-topbar">' +
+          '<button class="icon-btn" id="ra-menu-btn" aria-label="Open navigation menu" aria-expanded="false">' + R.ui.icon('menu') + '</button>' +
+          '<a class="topbar-brand" href="index.html">' +
+            '<span class="brand-mark">' + R.ui.icon('shield') + '</span>' +
+            '<span class="brand-text"><strong>RAKSHA</strong><small>Food resilience · prototype</small></span>' +
+          '</a>' +
+          '<div class="topbar-status">' +
+            '<span class="chip chip-off" id="ra-data-chip" hidden title="Where the data you are viewing comes from">…</span>' +
+            '<span class="chip chip-sync" id="ra-sync-badge" hidden title="Changes waiting to be synchronised">Sync</span>' +
+            '<span class="conn-pill on" id="ra-conn-pill" role="status" aria-live="polite" title="Application connectivity">' +
+              '<span class="conn-dot" aria-hidden="true"></span><span id="ra-conn-label">ONLINE</span>' +
+            '</span>' +
+            '<button class="sim-btn" id="ra-force-offline" data-ra-force-offline type="button" ' +
+              'title="Demo control: makes the app behave as if the internet is unavailable">Simulate Internet Loss</button>' +
+          '</div>' +
+        '</header>';
+    }
+
+    function sidebarHTML() {
+      var page = document.body.getAttribute('data-page');
+      var html = '<nav class="sidebar" id="ra-sidebar" aria-label="Primary navigation">';
+      NAV.forEach(function (g) {
+        html += '<p class="sidebar-label">' + g.group + '</p><ul>';
+        g.items.forEach(function (it) {
+          var active = it.key === page;
+          html += '<li><a class="nav-link' + (active ? ' active' : '') + '" href="' + it.href + '"' +
+            (active ? ' aria-current="page"' : '') + '>' + R.ui.icon(it.icon) + '<span>' + it.label + '</span></a></li>';
+        });
+        html += '</ul>';
+      });
+      html += '<div class="sidebar-foot">' +
+          '<p class="sidebar-note">Prototype decision-support tool. RAKSHA does not guarantee food safety.</p>' +
+          '<p class="sidebar-ver">RAKSHA v' + R.version + '</p>' +
+        '</div></nav>';
+      return html;
+    }
+
+    function renderShell() {
+      var topRoot = document.getElementById('ra-topbar-root');
+      if (topRoot) { topRoot.classList.add('slot-topbar'); topRoot.innerHTML = topbarHTML(); }
+
+      var sideRoot = document.getElementById('ra-sidebar-root');
+      var hasSidebar = !!sideRoot;
+      document.body.classList.toggle('has-sidebar', hasSidebar);
+      if (sideRoot) {
+        sideRoot.classList.add('slot-sidebar');
+        sideRoot.innerHTML = sidebarHTML();
+        var scrim = document.createElement('div');
+        scrim.className = 'scrim'; scrim.id = 'ra-scrim'; scrim.hidden = true;
+        document.body.appendChild(scrim);
+      }
+
+      var menuBtn = document.getElementById('ra-menu-btn');
+      var scrimEl = document.getElementById('ra-scrim');
+      if (!hasSidebar && menuBtn) { menuBtn.style.display = 'none'; }
+      function closeSidebar() {
+        document.body.classList.remove('sidebar-open');
+        if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+        if (scrimEl) scrimEl.hidden = true;
+      }
+      if (menuBtn && hasSidebar) {
+        menuBtn.addEventListener('click', function () {
+          var open = document.body.classList.toggle('sidebar-open');
+          menuBtn.setAttribute('aria-expanded', String(open));
+          if (scrimEl) scrimEl.hidden = !open;
+        });
+      }
+      if (scrimEl) scrimEl.addEventListener('click', closeSidebar);
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) closeSidebar();
+      });
+    }
+
+    function injectConfirmDialog() {
+      if (document.getElementById('ra-confirm')) return;
+      var d = document.createElement('dialog');
+      d.id = 'ra-confirm'; d.className = 'modal modal-sm';
+      d.innerHTML =
+        '<h2 class="confirm-title" id="ra-confirm-title"></h2>' +
+        '<p class="confirm-msg" id="ra-confirm-msg"></p>' +
+        '<div class="modal-actions">' +
+          '<button value="cancel" class="btn">Cancel</button>' +
+          '<button value="confirm" id="ra-confirm-ok" class="btn btn-danger">Confirm</button>' +
+        '</div>';
+      document.body.appendChild(d);
+    }
+
+    function updateDataChip(detail) {
+      var chip = document.getElementById('ra-data-chip');
+      if (!chip) return;
+      var online = R.offline ? R.offline.isOnline() : navigator.onLine;
+      var mode = detail && detail.mode ? detail.mode : (R.api ? R.api.mode : 'demo');
+      chip.hidden = false;
+      if (!online) { chip.className = 'chip chip-off'; chip.textContent = 'OFFLINE DATA'; chip.title = 'No connection — data is served from the offline cache on this device.'; }
+      else if (mode === 'live') { chip.className = 'chip chip-live'; chip.textContent = 'LIVE DATA'; chip.title = 'Connected to the RAKSHA backend.'; }
+      else { chip.className = 'chip chip-demo'; chip.textContent = 'DEMO DATA'; chip.title = 'Backend not connected — the app is running on its built-in demo dataset.'; }
+    }
+
+    function injectDemoBanner(show) {
+      var main = document.getElementById('main');
+      if (!main) return;
+      var b = document.getElementById('ra-demo-banner');
+      if (show) {
+        if (!b) {
+          b = document.createElement('div');
+          b.id = 'ra-demo-banner'; b.className = 'alert alert-warn'; b.setAttribute('role', 'note');
+          b.innerHTML = '<strong>Demo data mode.</strong> The RAKSHA backend is not connected, so this app is ' +
+            'running on its built-in demo dataset (Demo Village). Offline edits are queued and will sync when the server is reachable.';
+          main.prepend(b);
+        }
+      } else if (b) { b.remove(); }
+    }
+
+    function registerSW() {
+      if (!('serviceWorker' in navigator)) return;
+      var local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (!(location.protocol === 'https:' || local)) return;
+      navigator.serviceWorker.register('sw.js').catch(function (err) {
+        console.warn('[RAKSHA] Service Worker registration failed:', err);
+      });
+    }
+
+    renderShell();
+    injectConfirmDialog();
+    registerSW();
+    updateDataChip({ mode: 'demo' });
+
+    window.addEventListener('ra:apimode', function (e) {
+      updateDataChip(e.detail);
+      injectDemoBanner(e.detail && e.detail.mode === 'demo');
+    });
+    window.addEventListener('ra:connectivity', function () { updateDataChip(); });
+  })();
+
+  /* ================================================================
+     RAKSHA — API layer for this page (emergency plan)
+     Online : GET /api/action-plans (server) with snapshot caching.
+     Offline: rakshaDB snapshots (via the shared offline.js facade).
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA;
+
+    var API_BASE = 'api';
+    var LS_KEY = 'raksha.demo.v1';
+    var DEMO_COMMUNITY_ID = 'comm-demo-001';
+
+    var api = R.api = { mode: 'demo', lastSource: null };
+    var readyPromise = null;
+
+    var SEED_FOOD = [
+      { id: 'food-001', name: 'Cooked food (rice & curry)', category: 'Cooked',     quantity: 30, unit: 'kg', storageType: 'Refrigerated', status: 'PRIORITY',  priority: 'High' },
+      { id: 'food-002', name: 'Milk',                       category: 'Dairy',      quantity: 20, unit: 'L',  storageType: 'Refrigerated', status: 'CRITICAL', priority: 'Critical' },
+      { id: 'food-003', name: 'Fresh vegetables',           category: 'Vegetables', quantity: 40, unit: 'kg', storageType: 'Ambient',      status: 'PROTECT',  priority: 'Medium' },
+      { id: 'food-004', name: 'Meat & fish',                category: 'Meat',       quantity: 20, unit: 'kg', storageType: 'Frozen',       status: 'CRITICAL', priority: 'Critical' },
+      { id: 'food-005', name: 'Frozen food',                category: 'Frozen',     quantity: 30, unit: 'kg', storageType: 'Frozen',       status: 'PRIORITY', priority: 'High' },
+      { id: 'food-006', name: 'Rice & grains',              category: 'Grains',     quantity: 80, unit: 'kg', storageType: 'Ambient',      status: 'STABLE',   priority: 'Low' },
+      { id: 'food-007', name: 'Canned food',                category: 'Canned',     quantity: 50, unit: 'kg', storageType: 'Ambient',      status: 'STABLE',   priority: 'Low' }
+    ];
+
+    var SEED_RESOURCES = [
+      { id: 'res-001', name: 'Refrigerator A', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Community hall – kitchen',    powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: true },
+      { id: 'res-002', name: 'Refrigerator B', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Shelter block C',             powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: false },
+      { id: 'res-003', name: 'Freezer',        type: 'Freezer',      capacity: 40, unit: 'kg',    location: 'Community hall – kitchen',    powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: true },
+      { id: 'res-004', name: 'Cold box',       type: 'Cold box',     capacity: 20, unit: 'kg',    location: 'Mobile / shelter block C',    powerSource: 'Ice',   operationalStatus: 'Operational', availability: 'Available', ownerType: 'NGO',       poweredByGenerator: false },
+      { id: 'res-005', name: 'Generator',      type: 'Generator',    capacity: 1,  unit: 'units', location: 'Community hall',              powerSource: 'Fuel',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community' },
+      { id: 'res-006', name: 'Ice stock',      type: 'Ice supply',   capacity: 20, unit: 'kg',    location: 'Community hall freezer room', powerSource: 'None',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community' }
+    ];
+
+    function loadDemoState() {
+      try {
+        var raw = localStorage.getItem(LS_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      return {
+        food: JSON.parse(JSON.stringify(SEED_FOOD)),
+        resources: JSON.parse(JSON.stringify(SEED_RESOURCES)),
+        runs: {}, plans: {}, lastRunId: null, lastPlanRunId: null, seq: 100
+      };
+    }
+    var demo = loadDemoState();
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+    function fireMode() { R.dispatch('ra:apimode', { mode: api.mode }); }
+
+    function request(method, path, body) {
+      return fetch(API_BASE + path, {
+        method: method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined
+      }).then(function (res) {
+        if (!res.ok) {
+          return res.json().catch(function () { return {}; }).then(function (j) {
+            throw new Error((j && j.error) || ('Request failed (' + res.status + ')'));
+          });
+        }
+        return res.json();
+      });
+    }
+
+    function detectMode() {
+      var offline = R.offline && !R.offline.isOnline();
+      if (offline) { api.mode = 'demo'; fireMode(); return Promise.resolve('demo'); }
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 2500);
+      return fetch(API_BASE + '/health', { signal: ctrl.signal })
+        .then(function (res) { api.mode = res.ok ? 'live' : 'demo'; })
+        .catch(function () { api.mode = 'demo'; })
+        .then(function () { clearTimeout(timer); fireMode(); return api.mode; });
+    }
+    function ensureReady() {
+      if (!readyPromise) readyPromise = detectMode();
+      return readyPromise;
+    }
+    window.addEventListener('ra:connectivity', function (e) {
+      if (e.detail && e.detail.online) readyPromise = null;
+    });
+
+    api.getPlan = function (runId) {
+      /* GET /api/action-plans?runId=... */
+      return ensureReady().then(function () {
+        var online = R.offline.isOnline();
+        if (online && api.mode === 'live') {
+          return request('GET', '/action-plans?runId=' + runId).then(function (p) {
+            api.lastSource = 'live';
+            if (R.offline) R.offline.cacheSnapshot('latestPlan', p);
+            return p;
+          });
+        }
+        if (!online) {
+          return R.offline.loadSnapshot('latestPlan').then(function (cached) {
+            if (cached && cached.runId === runId) { api.lastSource = 'cache'; return cached; }
+            return fromDemo();
+          });
+        }
+        return fromDemo();
+        function fromDemo() {
+          api.lastSource = 'demo';
+          if (demo.plans[runId]) return clone(demo.plans[runId]);
+          throw new Error('No plan found for this simulation.');
+        }
+      });
+    };
+
+    api.getLatestPlan = function () {
+      /* GET /api/action-plans/latest?communityId=... */
+      return ensureReady().then(function () {
+        var online = R.offline.isOnline();
+        if (online && api.mode === 'live') {
+          return request('GET', '/action-plans/latest?communityId=' + DEMO_COMMUNITY_ID).then(function (p) {
+            api.lastSource = 'live';
+            if (R.offline) R.offline.cacheSnapshot('latestPlan', p);
+            return p;
+          });
+        }
+        if (!online) {
+          return R.offline.loadSnapshot('latestPlan').then(function (cached) {
+            if (cached) { api.lastSource = 'cache'; return cached; }
+            return fromDemo();
+          });
+        }
+        return fromDemo();
+        function fromDemo() {
+          api.lastSource = 'demo';
+          if (demo.lastPlanRunId && demo.plans[demo.lastPlanRunId]) return clone(demo.plans[demo.lastPlanRunId]);
+          return null;
+        }
+      });
+    };
+
+    api.resetDemoData = function () {
+      try { localStorage.removeItem(LS_KEY); } catch (e) { /* ignore */ }
+      location.reload();
+    };
+  })();
+
+  /* ================================================================
+     RAKSHA — emergency plan controller
+     Resolution order: API -> explicit offline copy (rakshaDB) ->
+     latestPlan snapshot -> most recent saved offline plan.
+     Offline notes via the shared offline.js compatibility facade
+     (plan_notes → metadata store, offline_plans → actionPlans).
+     One flagged robustness fix: tryCache guards a null runId.
+     ================================================================ */
+  (function () {
+    'use strict';
+    var R = window.RAKSHA;
+    var api = R.api, ui = R.ui;
+
+    var plan = null;
+    var notesTimer = null;
+
+    function sevBadge(s) {
+      var v = String(s).toUpperCase();
+      return '<span class="badge sev-' + v.toLowerCase() + '">' + ui.esc(v) + '</span>';
+    }
+
+    function alertBox(html, cls) {
+      return '<div class="alert ' + cls + '" role="note">' + html + '</div>';
+    }
+
+    function resolvePlan(runId) {
+      var tryApi = runId ? api.getPlan(runId) : api.getLatestPlan();
+      return tryApi.then(function (p) {
+        if (p) return { plan: p, source: api.lastSource };
+        return tryCache();
+      }).catch(function () { return tryCache(); });
+
+      function tryCache() {
+        // Robustness fix: guard against a null runId (no ?run= param and no
+        // plan generated yet) — previously this could leave the page stuck.
+        var direct = (runId != null)
+          ? R.offline.db.get('offline_plans', runId)
+          : Promise.resolve(null);
+        return direct.then(function (rec) {
+          if (rec) return { plan: rec.plan, source: 'offline' };
+          return R.offline.loadSnapshot('latestPlan').then(function (snap) {
+            if (snap) return { plan: snap, source: 'offline' };
+            return R.offline.db.getAll('offline_plans').then(function (all) {
+              if (all.length) {
+                all.sort(function (a, b) { return (b.savedAt || '').localeCompare(a.savedAt || ''); });
+                return { plan: all[0].plan, source: 'offline' };
+              }
+              return null;
+            });
+          });
+        });
+      }
+    }
+
+    function renderMeta() {
+      document.getElementById('pm-community').textContent = plan.community.name +
+        ' (' + plan.community.households + ' households)';
+      document.getElementById('pm-scenario').textContent = plan.scenario.label.split(' · ')[0];
+      document.getElementById('pm-power').textContent = plan.scenario.powerOff ? 'OFF' : 'ON';
+      document.getElementById('pm-internet').textContent = plan.scenario.internetOff ? 'OFF' : 'ON';
+      document.getElementById('pm-duration').textContent = plan.scenario.durationHours + ' hours';
+      document.getElementById('pm-temp').textContent = plan.scenario.ambientTempC + ' °C';
+      document.getElementById('pm-generated').textContent = ui.fmtDate(plan.generatedAt);
+      document.getElementById('plan-disclaimer').textContent = plan.disclaimers.plan;
+      document.getElementById('plan-sub').textContent =
+        'Plan ' + plan.planId + ' · based on run ' + plan.runId + ' · generated ' + ui.fmtDate(plan.generatedAt);
+    }
+
+    function renderActions() {
+      document.getElementById('plan-actions').innerHTML = plan.priorityActions.map(function (a) {
+        return '<li class="action-item"><span class="tier ' + a.tier.toLowerCase() + '">' + a.tier + '</span>' +
+          '<div class="action-body"><strong>' + ui.esc(a.title) + '</strong><p>' + ui.esc(a.detail) + '</p>' +
+          '<span class="action-time">When: ' + ui.esc(a.time) + '</span></div></li>';
+      }).join('');
+    }
+
+    function renderCritical() {
+      document.getElementById('plan-critical-body').innerHTML = plan.criticalFoodActions.map(function (c) {
+        return '<tr><td data-label="Food"><span class="cell-strong">' + ui.esc(c.food) + '</span></td>' +
+          '<td data-label="Quantity" class="num">' + ui.fmtNum(c.qty) + ' ' + ui.esc(c.unit) + '</td>' +
+          '<td data-label="Status">' + ui.statusBadge(c.status) + '</td>' +
+          '<td data-label="Action">' + ui.esc(c.action) + '</td>' +
+          '<td data-label="Rule">' + ui.esc(c.ruleCode) + '</td></tr>';
+      }).join('');
+    }
+
+    function renderResources() {
+      document.getElementById('plan-resources-body').innerHTML = plan.resources.map(function (r) {
+        return '<tr><td data-label="Resource"><span class="cell-strong">' + ui.esc(r.name) + '</span></td>' +
+          '<td data-label="Type">' + ui.esc(r.type) + '</td>' +
+          '<td data-label="Capacity" class="num">' + ui.fmtNum(r.capacity) + ' ' + ui.esc(r.unit) + '</td>' +
+          '<td data-label="Power">' + ui.esc(r.powerSource) + '</td>' +
+          '<td data-label="Status">' + ui.esc(r.operationalStatus) + '</td>' +
+          '<td data-label="Owner">' + ui.esc(r.ownerType) + '</td></tr>';
+      }).join('');
+    }
+
+    function renderAllocation() {
+      document.getElementById('plan-alloc-body').innerHTML = plan.allocation.map(function (a) {
+        var items = a.items.length
+          ? a.items.map(function (i) { return ui.esc(i.food) + ' — ' + ui.fmtNum(i.qty) + ' kg'; }).join('<br>')
+          : '<span class="hint">empty</span>';
+        var fillCls = a.protected ? '' : (a.utilization > 0 ? 'warn' : 'none');
+        return '<tr><td data-label="Resource"><span class="cell-strong">' + ui.esc(a.resource) + '</span>' +
+          (a.protected ? '<span class="badge st-stable" style="margin-left:6px">PROTECTED</span>'
+                       : '<span class="badge st-priority" style="margin-left:6px">UNPROTECTED</span>') + '</td>' +
+          '<td data-label="Powered by">' + ui.esc(a.poweredBy) + '</td>' +
+          '<td data-label="Load"><span class="util"><span class="util-track"><span class="util-fill ' + fillCls +
+          '" style="width:' + a.utilization + '%"></span></span><span class="util-pct">' + a.utilization + '%</span></span></td>' +
+          '<td data-label="Items">' + items + '</td></tr>';
+      }).join('');
+    }
+
+    function renderGaps() {
+      document.getElementById('plan-gaps').innerHTML = plan.gaps.length ? plan.gaps.map(function (g) {
+        return '<li class="gap-item">' + sevBadge(g.severity) +
+          '<div class="gap-body"><strong>' + ui.esc(g.code) + ' · ' + ui.esc(g.title) + '</strong>' +
+          '<span>' + ui.esc(g.detail) + '</span></div></li>';
+      }).join('') : '<li class="hint">No preparedness gaps recorded.</li>';
+    }
+
+    /* Local notes — stored in rakshaDB via the offline.js facade */
+    function loadNotes() {
+      return R.offline.db.get('plan_notes', plan.planId).then(function (rec) {
+        return rec ? rec.text : '';
+      }).catch(function () { return ''; });
+    }
+    function saveNotes(text) {
+      return R.offline.db.put('plan_notes', { planId: plan.planId, text: text, savedAt: new Date().toISOString() })
+        .then(function () {
+          document.getElementById('notes-status').textContent =
+            'Notes saved locally at ' + new Date().toLocaleTimeString() + ' — available offline.';
+        }).catch(function () {
+          document.getElementById('notes-status').textContent = 'Could not save notes on this device.';
+        });
+    }
+
+    function updateSaveButton(saved) {
+      var btn = document.getElementById('btn-save-offline');
+      btn.textContent = saved ? 'Saved offline ✓' : 'Save Offline';
+      btn.classList.toggle('btn-primary', !saved);
+      btn.title = saved
+        ? 'An offline copy of this plan is stored on this device (rakshaDB / IndexedDB).'
+        : 'Store a copy of this plan on this device so it can be opened without internet.';
+    }
+
+    function render(res) {
+      plan = res.plan;
+      document.getElementById('plan-doc').hidden = false;
+      document.getElementById('plan-empty').hidden = true;
+      document.getElementById('plan-mark').innerHTML = ui.icon('shield');
+      renderMeta(); renderActions(); renderCritical(); renderResources();
+      renderAllocation(); renderGaps();
+
+      var alerts = '';
+      if (res.source === 'offline' || res.source === 'cache') {
+        alerts += alertBox('<strong>Offline copy.</strong> This plan was loaded from this device — no internet connection was needed.', 'alert-info');
+      }
+      var rulesNote = plan.rulesApplied && plan.rulesApplied.length
+        ? 'Guidance in this plan references ' + plan.rulesApplied.length +
+          ' configured safety rule(s): ' + plan.rulesApplied.map(function (r) { return r.ruleCode; }).join(', ') + '.'
+        : 'No safety rules were applicable to this scenario.';
+      alerts += alertBox(rulesNote + ' Rules are configurable records with source organisations and jurisdictions.', 'alert-info');
+      document.getElementById('plan-alerts').innerHTML = alerts;
+
+      loadNotes().then(function (text) {
+        document.getElementById('plan-notes').value = text;
+        document.getElementById('notes-print').textContent = text;
+      });
+      R.offline.db.get('offline_plans', plan.runId).then(function (rec) {
+        updateSaveButton(!!rec);
+      }).catch(function () { updateSaveButton(false); });
+    }
+
+    R.onReady(function () {
+      var runId = new URLSearchParams(window.location.search).get('run');
+
+      resolvePlan(runId).then(function (res) {
+        if (res) render(res);
+        else {
+          document.getElementById('plan-empty').hidden = false;
+          document.getElementById('plan-doc').hidden = true;
+          document.getElementById('plan-sub').textContent = 'No plan has been generated yet.';
+        }
+      }).catch(function (err) {
+        // Robustness fix: never leave the page stuck on "Loading…"
+        document.getElementById('plan-empty').hidden = false;
+        document.getElementById('plan-doc').hidden = true;
+        document.getElementById('plan-sub').textContent = 'Could not load the plan: ' + err.message;
+      });
+
+      document.getElementById('btn-save-offline').addEventListener('click', function () {
+        if (!plan) return;
+        R.offline.db.put('offline_plans', { runId: plan.runId, savedAt: new Date().toISOString(), plan: plan })
+          .then(function () { return R.offline.cacheSnapshot('latestPlan', plan); })
+          .then(function () {
+            updateSaveButton(true);
+            ui.toast('Plan saved offline. It will open on this device even with no internet connection.', 'success');
+          })
+          .catch(function () { ui.toast('Could not save the plan on this device.', 'error'); });
+      });
+
+      document.getElementById('btn-print').addEventListener('click', function () { window.print(); });
+
+      var notesArea = document.getElementById('plan-notes');
+      notesArea.addEventListener('input', function () {
+        document.getElementById('notes-print').textContent = notesArea.value;
+        clearTimeout(notesTimer);
+        notesTimer = setTimeout(function () { if (plan) saveNotes(notesArea.value); }, 600);
+      });
+    });
+  })();
+  </script>
+
+  <!-- Shared offline + sync layers (loaded after the page script) -->
+  <script src="js/offline.js"></script>
+  <script src="js/sync.js"></script>
+</body>
+</html>
