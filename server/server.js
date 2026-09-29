@@ -19,6 +19,11 @@ const syncRoutes = require('./routes/syncRoutes');
 const communityController = require('./controllers/communityController');
 
 const app = express();
+
+/* ★ CHANGE 1: Render runs your app behind a reverse proxy — this makes
+   req.ip / protocol behave correctly there. Harmless in local dev. */
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 
@@ -94,10 +99,19 @@ if (fs.existsSync(clientDir)) {
 app.use(notFound);
 app.use(errorHandler);
 
+/* ★ CHANGE 2: fail loudly and clearly. Without the .catch(), a bad Mongo
+   URI on Render shows up as a cryptic "UnhandledPromiseRejection" in the
+   logs; with it, you get the actual reason at the top of the log. */
 const PORT = process.env.PORT || 4000;
-connectMongo().then(() => {
-  app.listen(PORT, () => {
-    console.log(`[RAKSHA] API  ready -> http://localhost:${PORT}/api/health`);
-    if (fs.existsSync(clientDir)) console.log(`[RAKSHA] App  ready -> http://localhost:${PORT}`);
+connectMongo()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`[RAKSHA] API  ready -> http://localhost:${PORT}/api/health`);
+      if (fs.existsSync(clientDir)) console.log(`[RAKSHA] App  ready -> http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('[RAKSHA] FATAL: MongoDB connection failed:', err.message);
+    console.error('[RAKSHA] Check: MONGODB_URI set? Atlas Network Access = 0.0.0.0/0? password URL-encoded?');
+    process.exit(1);
   });
-});
