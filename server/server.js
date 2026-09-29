@@ -38,7 +38,7 @@ app.use((req, res, next) => {
 
 // ── Legacy community ID resolver (frontend compatibility shim) ──
 // The frontend prototype was built before the backend existed and sends its
-// built-in demo dataset's community ID ("comm-demo-001"), which is not a
+// built-in demo dataset's community ID (""650c1f1e2f8a1b0012345678""), which is not a
 // MongoDB ObjectId. This middleware rewrites any non-ObjectId communityId
 // (query, body, or sync-item payload) to the first real community in the
 // database — the single-community assumption of the prototype.
