@@ -5,23 +5,53 @@ const Household = require('../models/Household');
 const Community = require('../models/Community');
 const SimulationRun = require('../models/SimulationRun');
 const SafetyRule = require('../models/SafetyRule');
+const mongoose = require('mongoose');
 const { ApiError, asyncHandler } = require('../middleware/errors');
 const { runSimulation } = require('../services/simulationEngine');
 
 const COLLECTIONS = {
   food_items: FoodItem,
+  foodItems: FoodItem,
+  food: FoodItem,
   resources: Resource,
   households: Household,
   communities: Community
 };
 
+// Helper to ensure a valid database Community exists for incoming offline items
+async function resolveCommunityId(providedId) {
+  if (providedId && mongoose.isValidObjectId(providedId)) {
+    const exists = await Community.exists({ _id: providedId });
+    if (exists) return providedId;
+  }
+  const primaryCommunity = await Community.findOne().sort({ createdAt: 1 }).lean();
+  return primaryCommunity ? primaryCommunity._id : providedId;
+}
+
 function normalizeItem(raw) {
   const item = { ...raw };
+
+  // Handle client format like { type: "food_items.create" } or { action: "CREATE", entityType: "food" }
   if (!item.operation && typeof item.type === 'string' && item.type.includes('.')) {
     const [collection, operation] = item.type.split('.');
     item.collection = item.collection || collection;
     item.operation = operation;
   }
+
+  if (!item.collection && item.entityType) {
+    item.collection = item.entityType;
+  }
+
+  if (!item.operation && item.action) {
+    const actionMap = { CREATE: 'create', ADD: 'create', UPDATE: 'update', DELETE: 'delete' };
+    item.operation = actionMap[String(item.action).toUpperCase()] || item.action;
+  }
+
+  // Normalize collection aliases
+  if (item.collection === 'food' || item.collection === 'foodItem') {
+    item.collection = 'food_items';
+  }
+
   return item;
 }
 
@@ -50,6 +80,11 @@ async function applyUpdate(Model, item) {
 
   const payload = { ...(item.payload || {}) };
   delete payload._id;
+
+  if (payload.communityId) {
+    payload.communityId = await resolveCommunityId(payload.communityId);
+  }
+
   const updated = await Model.findByIdAndUpdate(item.recordId, payload, { new: true, runValidators: true });
   return { collection: item.collection, recordId: String(updated._id), status: 'updated' };
 }
@@ -58,11 +93,13 @@ async function applyUpdate(Model, item) {
 // current data and stores the run (the offline local result was provisional).
 async function applySimulationCreate(item) {
   const p = item.payload || {};
-  if (!p.communityId || !p.config) {
+  const communityId = await resolveCommunityId(p.communityId);
+  if (!communityId || !p.config) {
     throw new ApiError(400, 'simulationRuns create requires payload { communityId, config }.');
   }
-  const community = await Community.findById(p.communityId);
-  if (!community) throw new ApiError(404, `Community not found: ${p.communityId}`);
+
+  const community = await Community.findById(communityId);
+  if (!community) throw new ApiError(404, `Community not found: ${communityId}`);
 
   const cfg = {
     disasterType: p.config.disasterType,
@@ -101,7 +138,7 @@ async function applySimulationCreate(item) {
 }
 
 async function applyOne(item) {
-  if (!item.deviceId) throw new ApiError(400, 'Field "deviceId" is required.');
+  const deviceId = item.deviceId || 'offline-client';
 
   if (item.collection === 'simulationRuns') {
     if (item.operation !== 'create') throw new ApiError(400, 'simulationRuns supports operation "create" only.');
@@ -128,8 +165,15 @@ async function applyOne(item) {
     return applyUpdate(Model, item);
   }
 
-  // create — idempotent when the client supplied its original _id
+  // create — strip client-generated temporary string IDs to allow fresh ObjectId assignment
   const payload = { ...(item.payload || {}) };
+  if (payload._id && !mongoose.isValidObjectId(payload._id)) {
+    delete payload._id;
+  }
+  delete payload.id;
+
+  payload.communityId = await resolveCommunityId(payload.communityId);
+
   try {
     const doc = await Model.create(payload);
     return { collection: item.collection, recordId: String(doc._id), status: 'created' };
@@ -166,6 +210,7 @@ exports.sync = asyncHandler(async (req, res) => {
         syncedAt: new Date()
       });
     } catch (err) {
+      console.error('[RAKSHA] Sync item failure:', err.message);
       results.push({ collection: item.collection, operation: item.operation, status: 'failed', reason: err.message });
     }
   }
