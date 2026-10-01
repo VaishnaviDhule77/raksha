@@ -591,12 +591,11 @@
     'use strict';
     var R = window.RAKSHA;
 
-    var API_BASE = 'api';
+    var API_BASE = '/api';
     var LS_KEY = 'raksha.demo.v1';
     var DEMO_COMMUNITY_ID = "650c1f1e2f8a1b0012345678";
 
     var api = R.api = { mode: 'demo', lastSource: null };
-    var readyPromise = null;
 
     var SEED_FOOD = [
       { id: 'food-001', name: 'Cooked food (rice & curry)', category: 'Cooked',     quantity: 30, unit: 'kg', storageType: 'Refrigerated', status: 'PRIORITY',  priority: 'High' },
@@ -649,81 +648,22 @@
       });
     }
 
-    function detectMode() {
-      var offline = R.offline ? !R.offline.isOnline() : !navigator.onLine;
-      if (offline) { api.mode = 'demo'; fireMode(); return Promise.resolve('demo'); }
-      var ctrl = new AbortController();
-      var timer = setTimeout(function () { ctrl.abort(); }, 2500);
-      return fetch(API_BASE + '/health', { signal: ctrl.signal })
-        .then(function (res) { api.mode = res.ok ? 'live' : 'demo'; })
-        .catch(function () { api.mode = navigator.onLine ? 'live' : 'demo'; })
-        .then(function () { clearTimeout(timer); fireMode(); return api.mode; });
-    }
-
-    function ensureReady() {
-      if (!readyPromise) readyPromise = detectMode();
-      return readyPromise;
-    }
-
+    // Invalidate stale snapshots upon re-establishing connectivity
     window.addEventListener('ra:connectivity', function (e) {
-      readyPromise = null;
       if (e.detail && e.detail.online) {
         api.mode = 'live';
         if (R.offline && R.offline.cacheSnapshot) {
           R.offline.cacheSnapshot('inventory', null);
         }
+        fireMode();
       }
     });
 
-    function readChain(path, snapshotName, demoFn) {
-      return ensureReady().then(function () {
-        var isOnline = R.offline ? R.offline.isOnline() : navigator.onLine;
-        if (isOnline) {
-          return request('GET', path).then(function (data) {
-            api.mode = 'live';
-            api.lastSource = 'live';
-            fireMode();
-            if (R.offline && R.offline.cacheSnapshot) {
-              R.offline.cacheSnapshot(snapshotName, data);
-            }
-            return data;
-          }).catch(function () {
-            api.mode = 'demo';
-            fireMode();
-            return fallback();
-          });
-        }
-        return fallback();
-
-        function fallback() {
-          var fromDemo = function () {
-            var data = demoFn();
-            api.lastSource = 'demo';
-            return data;
-          };
-          if (!isOnline && R.offline && R.offline.loadSnapshot) {
-            return R.offline.loadSnapshot(snapshotName).then(function (cached) {
-              if (cached != null) { api.lastSource = 'cache'; return cached; }
-              return fromDemo();
-            });
-          }
-          return fromDemo();
-        }
-      });
-    }
-
-    function writeRemote(method, path, body, demoMutator) {
-      return ensureReady().then(function () {
-        if (api.mode === 'live') return request(method, path, body);
-        var result = demoMutator();
-        saveDemoState();
-        return result;
-      });
-    }
-
     function offlineWrite(operation, id, data, demoMutator) {
       var payload = Object.assign({}, data, { communityId: DEMO_COMMUNITY_ID });
-      var p = R.offline.writeQueued('food_items', operation, id, payload);
+      var p = (R.offline && R.offline.writeQueued)
+        ? R.offline.writeQueued('food_items', operation, id, payload)
+        : Promise.resolve();
       if (api.mode === 'demo' && demoMutator) {
         try { demoMutator(); saveDemoState(); } catch (e) { /* ignore */ }
       }
@@ -731,51 +671,70 @@
     }
 
     api.getFoodItems = function () {
-      return readChain('/food-items?communityId=' + DEMO_COMMUNITY_ID, 'inventory', function () { return clone(demo.food); });
+      var isOnline = R.offline ? R.offline.isOnline() : navigator.onLine;
+      if (isOnline) {
+        return request('GET', '/food-items?communityId=' + DEMO_COMMUNITY_ID)
+          .then(function (data) {
+            api.mode = 'live';
+            api.lastSource = 'live';
+            fireMode();
+            if (R.offline && R.offline.cacheSnapshot) {
+              R.offline.cacheSnapshot('inventory', data);
+            }
+            return data;
+          })
+          .catch(function () {
+            api.mode = 'demo';
+            fireMode();
+            return fallback();
+          });
+      }
+      return fallback();
+
+      function fallback() {
+        if (R.offline && R.offline.loadSnapshot) {
+          return R.offline.loadSnapshot('inventory').then(function (cached) {
+            if (cached != null) { api.lastSource = 'cache'; return cached; }
+            return clone(demo.food);
+          });
+        }
+        return Promise.resolve(clone(demo.food));
+      }
     };
 
     api.createFoodItem = function (data) {
-      if (R.offline && !R.offline.isOnline()) {
+      var isOnline = R.offline ? R.offline.isOnline() : navigator.onLine;
+      if (!isOnline) {
         return offlineWrite('create', null, data, function () {
           var item = Object.assign({ id: 'food-' + (demo.seq++) }, data, { updatedAt: new Date().toISOString() });
           demo.food.push(item);
           return clone(item);
         });
       }
-      return writeRemote('POST', '/food-items', Object.assign({ communityId: DEMO_COMMUNITY_ID }, data), function () {
-        var item = Object.assign({ id: 'food-' + (demo.seq++) }, data, { updatedAt: new Date().toISOString() });
-        demo.food.push(item);
-        return clone(item);
-      });
+      return request('POST', '/food-items', Object.assign({ communityId: DEMO_COMMUNITY_ID }, data));
     };
 
     api.updateFoodItem = function (id, data) {
-      if (R.offline && !R.offline.isOnline()) {
+      var isOnline = R.offline ? R.offline.isOnline() : navigator.onLine;
+      if (!isOnline) {
         return offlineWrite('update', id, data, function () {
           var item = demo.food.filter(function (f) { return (f._id || f.id) === id; })[0];
           if (item) Object.assign(item, data, { id: id, updatedAt: new Date().toISOString() });
           return clone(item || data);
         });
       }
-      return writeRemote('PUT', '/food-items/' + id, data, function () {
-        var item = demo.food.filter(function (f) { return (f._id || f.id) === id; })[0];
-        if (!item) throw new Error('Food item not found.');
-        Object.assign(item, data, { id: id, updatedAt: new Date().toISOString() });
-        return clone(item);
-      });
+      return request('PUT', '/food-items/' + id, data);
     };
 
     api.deleteFoodItem = function (id) {
-      if (R.offline && !R.offline.isOnline()) {
+      var isOnline = R.offline ? R.offline.isOnline() : navigator.onLine;
+      if (!isOnline) {
         return offlineWrite('delete', id, null, function () {
           demo.food = demo.food.filter(function (f) { return (f._id || f.id) !== id; });
           return { ok: true };
         });
       }
-      return writeRemote('DELETE', '/food-items/' + id, null, function () {
-        demo.food = demo.food.filter(function (f) { return (f._id || f.id) !== id; });
-        return { ok: true };
-      });
+      return request('DELETE', '/food-items/' + id);
     };
 
     api.resetDemoData = function () {
@@ -819,6 +778,7 @@
     function render() {
       var list = filtered();
       var tbody = document.getElementById('food-tbody');
+      if (!tbody) return;
       if (!list.length) {
         tbody.innerHTML = '<tr><td colspan="8" class="hint" style="text-align:center;padding:28px">' +
           'No food items match your filters.</td></tr>';
@@ -849,12 +809,18 @@
       var totals = [kg ? ui.fmtNum(kg) + ' kg' : '', litres ? ui.fmtNum(litres) + ' L' : '']
         .filter(Boolean).join(' · ') || '0 kg';
       var queued = Object.keys(pending).length;
-      document.getElementById('inv-count').textContent =
-        'Showing ' + list.length + ' of ' + items.length + ' items · ' + totals +
-        (queued ? ' · ' + queued + ' queued offline' : '');
-      document.getElementById('inv-meta').textContent =
-        items.length + ' food items recorded for this community' +
-        (!R.offline.isOnline() ? ' · offline (cached + queued edits)' : '');
+      
+      var countEl = document.getElementById('inv-count');
+      if (countEl) {
+        countEl.textContent = 'Showing ' + list.length + ' of ' + items.length + ' items · ' + totals +
+          (queued ? ' · ' + queued + ' queued offline' : '');
+      }
+      var metaEl = document.getElementById('inv-meta');
+      if (metaEl) {
+        var isOnline = R.offline ? R.offline.isOnline() : navigator.onLine;
+        metaEl.textContent = items.length + ' food items recorded for this community' +
+          (!isOnline ? ' · offline (cached + queued edits)' : '');
+      }
     }
 
     function openDialog(item) {
@@ -877,83 +843,102 @@
         ? R.sync.pendingByCollection('food_items')
         : Promise.resolve({});
       return Promise.all([api.getFoodItems(), pendingPromise]).then(function (r) {
-        items = r[0];
-        pending = r[1];
+        items = r[0] || [];
+        pending = r[1] || {};
         render();
       });
     }
 
     R.onReady(function () {
-      document.getElementById('btn-add-food').addEventListener('click', function () { openDialog(null); });
+      var btnAdd = document.getElementById('btn-add-food');
+      if (btnAdd) btnAdd.addEventListener('click', function () { openDialog(null); });
 
-      document.getElementById('inv-search').addEventListener('input', ui.debounce(function (e) {
-        filters.q = e.target.value.trim(); render();
-      }, 180));
-      document.getElementById('inv-cat').addEventListener('change', function (e) { filters.category = e.target.value; render(); });
-      document.getElementById('inv-status').addEventListener('change', function (e) { filters.status = e.target.value; render(); });
+      var searchEl = document.getElementById('inv-search');
+      if (searchEl) {
+        searchEl.addEventListener('input', ui.debounce(function (e) {
+          filters.q = e.target.value.trim(); render();
+        }, 180));
+      }
+      var catEl = document.getElementById('inv-cat');
+      if (catEl) catEl.addEventListener('change', function (e) { filters.category = e.target.value; render(); });
+      
+      var statusEl = document.getElementById('inv-status');
+      if (statusEl) statusEl.addEventListener('change', function (e) { filters.status = e.target.value; render(); });
 
-      dialog.querySelectorAll('[data-close]').forEach(function (b) {
-        b.addEventListener('click', function () { dialog.close(); });
-      });
-      dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+      if (dialog) {
+        dialog.querySelectorAll('[data-close]').forEach(function (b) {
+          b.addEventListener('click', function () { dialog.close(); });
+        });
+        dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+      }
 
-      form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        if (!form.checkValidity()) { form.reportValidity(); return; }
-        var payload = {
-          name: document.getElementById('f-name').value.trim(),
-          category: document.getElementById('f-category').value,
-          storageType: document.getElementById('f-storage').value,
-          quantity: Number(document.getElementById('f-qty').value),
-          unit: document.getElementById('f-unit').value,
-          status: document.getElementById('f-status').value,
-          priority: document.getElementById('f-priority').value,
-          updatedAt: new Date().toISOString()
-        };
-        var submitBtn = document.getElementById('food-submit');
-        submitBtn.classList.add('is-busy');
-        var op = editingId ? api.updateFoodItem(editingId, payload) : api.createFoodItem(payload);
-        op.then(function () {
-          dialog.close();
-          if (!R.offline.isOnline()) {
-            ui.toast('“' + payload.name + '” saved offline — queued for sync. It will reach MongoDB when the connection returns.', 'warn');
-          } else {
-            ui.toast('“' + payload.name + '” ' + (editingId ? 'updated' : 'added to the inventory') + '.', 'success');
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          if (!form.checkValidity()) { form.reportValidity(); return; }
+          var payload = {
+            name: document.getElementById('f-name').value.trim(),
+            category: document.getElementById('f-category').value,
+            storageType: document.getElementById('f-storage').value,
+            quantity: Number(document.getElementById('f-qty').value),
+            unit: document.getElementById('f-unit').value,
+            status: document.getElementById('f-status').value,
+            priority: document.getElementById('f-priority').value,
+            updatedAt: new Date().toISOString()
+          };
+          var submitBtn = document.getElementById('food-submit');
+          submitBtn.classList.add('is-busy');
+          
+          var isOnline = R.offline ? R.offline.isOnline() : navigator.onLine;
+          var op = editingId ? api.updateFoodItem(editingId, payload) : api.createFoodItem(payload);
+          
+          op.then(function () {
+            if (dialog) dialog.close();
+            if (!isOnline) {
+              ui.toast('“' + payload.name + '” saved offline — queued for sync. It will reach MongoDB when the connection returns.', 'warn');
+            } else {
+              ui.toast('“' + payload.name + '” ' + (editingId ? 'updated' : 'added to the inventory') + '.', 'success');
+            }
+            return load();
+          }).catch(function (err) {
+            ui.toast(err.message, 'error');
+          }).finally(function () { submitBtn.classList.remove('is-busy'); });
+        });
+      }
+
+      var tbody = document.getElementById('food-tbody');
+      if (tbody) {
+        tbody.addEventListener('click', function (e) {
+          var editBtn = e.target.closest('.act-edit');
+          var delBtn = e.target.closest('.act-del');
+          var isOnline = R.offline ? R.offline.isOnline() : navigator.onLine;
+
+          if (editBtn) {
+            var targetId = editBtn.getAttribute('data-id');
+            var item = items.filter(function (f) { return (f._id || f.id) === targetId; })[0];
+            if (item) openDialog(item);
+          } else if (delBtn) {
+            var id = delBtn.getAttribute('data-id');
+            var target = items.filter(function (f) { return (f._id || f.id) === id; })[0];
+            if (!target) return;
+            ui.confirm({
+              title: 'Delete food item?',
+              message: '“' + target.name + '” will be removed' +
+                (!isOnline ? ' locally and the deletion queued for sync' : '') +
+                '. This cannot be undone.',
+              confirmLabel: 'Delete', danger: true
+            }).then(function (ok) {
+              if (!ok) return;
+              api.deleteFoodItem(id).then(function () {
+                ui.toast(!isOnline
+                  ? '“' + target.name + '” deleted offline — deletion queued for sync.'
+                  : '“' + target.name + '” deleted.', !isOnline ? 'warn' : 'success');
+                return load();
+              }).catch(function (err) { ui.toast(err.message, 'error'); });
+            });
           }
-          return load();
-        }).catch(function (err) {
-          ui.toast(err.message, 'error');
-        }).finally(function () { submitBtn.classList.remove('is-busy'); });
-      });
-
-      document.getElementById('food-tbody').addEventListener('click', function (e) {
-        var editBtn = e.target.closest('.act-edit');
-        var delBtn = e.target.closest('.act-del');
-        if (editBtn) {
-          var targetId = editBtn.getAttribute('data-id');
-          var item = items.filter(function (f) { return (f._id || f.id) === targetId; })[0];
-          if (item) openDialog(item);
-        } else if (delBtn) {
-          var id = delBtn.getAttribute('data-id');
-          var target = items.filter(function (f) { return (f._id || f.id) === id; })[0];
-          if (!target) return;
-          ui.confirm({
-            title: 'Delete food item?',
-            message: '“' + target.name + '” will be removed' +
-              (!R.offline.isOnline() ? ' locally and the deletion queued for sync' : '') +
-              '. This cannot be undone.',
-            confirmLabel: 'Delete', danger: true
-          }).then(function (ok) {
-            if (!ok) return;
-            api.deleteFoodItem(id).then(function () {
-              ui.toast(!R.offline.isOnline()
-                ? '“' + target.name + '” deleted offline — deletion queued for sync.'
-                : '“' + target.name + '” deleted.', !R.offline.isOnline() ? 'warn' : 'success');
-              return load();
-            }).catch(function (err) { ui.toast(err.message, 'error'); });
-          });
-        }
-      });
+        });
+      }
 
       window.addEventListener('ra:sync-queue', function () {
         if (R.offline && R.offline.cacheSnapshot) {
@@ -962,13 +947,17 @@
         load();
       });
 
+      window.addEventListener('ra:connectivity', function () {
+        load();
+      });
+
       load().catch(function (err) { ui.toast('Could not load inventory: ' + err.message, 'error'); });
     });
   })();
-  </script>
+</script>
 
-  <!-- Shared offline + sync layers -->
-  <script src="js/offline.js"></script>
-  <script src="js/sync.js"></script>
+<!-- Shared offline + sync layers -->
+<script src="js/offline.js"></script>
+<script src="js/sync.js"></script>
 </body>
 </html>
