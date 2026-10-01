@@ -107,7 +107,7 @@ async function seedDefaultData() {
     const FoodItem = mongoose.model('FoodItem');
     const Resource = mongoose.model('Resource');
 
-    // 1. Ensure at least one Community document exists
+    // 1. Ensure primary Community document exists
     let community = await Community.findOne();
     if (!community) {
       community = await Community.create({
@@ -117,25 +117,36 @@ async function seedDefaultData() {
       console.log('[RAKSHA] Seeded default Community:', community._id);
     }
 
-    // 2. Ensure default Food Items exist in the database
-    const foodCount = await FoodItem.countDocuments();
-    if (foodCount === 0) {
-      await FoodItem.insertMany([
-        { name: 'Cooked food (rice & curry)', category: 'Cooked', quantity: 30, unit: 'kg', storageType: 'Refrigerated', status: 'PRIORITY', priority: 'High', communityId: community._id },
-        { name: 'Milk', category: 'Dairy', quantity: 20, unit: 'L', storageType: 'Refrigerated', status: 'CRITICAL', priority: 'Critical', communityId: community._id },
-        { name: 'Fresh vegetables', category: 'Vegetables', quantity: 40, unit: 'kg', storageType: 'Ambient', status: 'PROTECT', priority: 'Medium', communityId: community._id },
-        { name: 'Meat & fish', category: 'Meat', quantity: 20, unit: 'kg', storageType: 'Frozen', status: 'CRITICAL', priority: 'Critical', communityId: community._id },
-        { name: 'Frozen food', category: 'Frozen', quantity: 30, unit: 'kg', storageType: 'Frozen', status: 'PRIORITY', priority: 'High', communityId: community._id },
-        { name: 'Rice & grains', category: 'Grains', quantity: 80, unit: 'kg', storageType: 'Ambient', status: 'STABLE', priority: 'Low', communityId: community._id },
-        { name: 'Canned food', category: 'Canned', quantity: 50, unit: 'kg', storageType: 'Ambient', status: 'STABLE', priority: 'Low', communityId: community._id }
-      ]);
-      console.log('[RAKSHA] Seeded default Food Items.');
-    }
+    // 2. Ensure existing orphaned food items bind to the primary communityId
+    await FoodItem.updateMany(
+      { $or: [{ communityId: {$exists: false } }, { communityId: null }] },
+      { $set: { communityId: community._id } }
+    );
 
-    // 3. Force re-seed Resources with Strict Schema Enum Compliance
-    const resourceCount = await Resource.countDocuments();
+    // 3. Upsert default food items to guarantee core inventory options exist
+    const defaultFoods = [
+      { name: 'Cooked food (rice & curry)', category: 'Cooked', quantity: 30, unit: 'kg', storageType: 'Refrigerated', status: 'PRIORITY', priority: 'High', communityId: community._id },
+      { name: 'Milk', category: 'Dairy', quantity: 20, unit: 'L', storageType: 'Refrigerated', status: 'CRITICAL', priority: 'Critical', communityId: community._id },
+      { name: 'Fresh vegetables', category: 'Vegetables', quantity: 40, unit: 'kg', storageType: 'Ambient', status: 'PROTECT', priority: 'Medium', communityId: community._id },
+      { name: 'Meat & fish', category: 'Meat', quantity: 20, unit: 'kg', storageType: 'Frozen', status: 'CRITICAL', priority: 'Critical', communityId: community._id },
+      { name: 'Frozen food', category: 'Frozen', quantity: 30, unit: 'kg', storageType: 'Frozen', status: 'PRIORITY', priority: 'High', communityId: community._id },
+      { name: 'Rice & grains', category: 'Grains', quantity: 80, unit: 'kg', storageType: 'Ambient', status: 'STABLE', priority: 'Low', communityId: community._id },
+      { name: 'Canned food', category: 'Canned', quantity: 50, unit: 'kg', storageType: 'Ambient', status: 'STABLE', priority: 'Low', communityId: community._id }
+    ];
+
+    for (const item of defaultFoods) {
+      await FoodItem.updateOne(
+        { name: item.name, communityId: community._id },
+        { $setOnInsert: item },
+        { upsert: true }
+      );
+    }
+    console.log('[RAKSHA] Successfully verified and upserted default Food Items!');
+
+    // 4. Force re-seed Resources with Strict Schema Enum Compliance
+    const resourceCount = await Resource.countDocuments({ communityId: community._id });
     if (resourceCount < 3) {
-      await Resource.deleteMany({});
+      await Resource.deleteMany({ communityId: community._id });
       await Resource.insertMany([
         {
           name: 'Community Freezer Unit A',
