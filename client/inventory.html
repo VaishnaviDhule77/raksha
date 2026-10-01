@@ -325,7 +325,7 @@
     </main>
   </div>
 
-  <script>
+ <script>
   /* ================================================================
      RAKSHA — shared core (identical block in every page)
      ================================================================ */
@@ -613,7 +613,7 @@
 
     var SEED_RESOURCES = [
       { id: 'res-001', name: 'Refrigerator A', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Community hall – kitchen',    powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: true },
-      { id: 'res-002', name: 'Refrigerator B', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Shelter block C',             powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: false },
+      { id: 'res-002', name: 'Refrigerator B', type: 'Refrigerator', capacity: 50, unit: 'kg',    location: 'Shelter block C',            powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: false },
       { id: 'res-003', name: 'Freezer',        type: 'Freezer',      capacity: 40, unit: 'kg',    location: 'Community hall – kitchen',    powerSource: 'Grid',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community', poweredByGenerator: true },
       { id: 'res-004', name: 'Cold box',       type: 'Cold box',     capacity: 20, unit: 'kg',    location: 'Mobile / shelter block C',    powerSource: 'Ice',   operationalStatus: 'Operational', availability: 'Available', ownerType: 'NGO',       poweredByGenerator: false },
       { id: 'res-005', name: 'Generator',      type: 'Generator',    capacity: 1,  unit: 'units', location: 'Community hall',              powerSource: 'Fuel',  operationalStatus: 'Operational', availability: 'Available', ownerType: 'Community' },
@@ -653,13 +653,13 @@
     }
 
     function detectMode() {
-      var offline = R.offline && !R.offline.isOnline();
+      var offline = R.offline ? !R.offline.isOnline() : !navigator.onLine;
       if (offline) { api.mode = 'demo'; fireMode(); return Promise.resolve('demo'); }
       var ctrl = new AbortController();
       var timer = setTimeout(function () { ctrl.abort(); }, 2500);
       return fetch(API_BASE + '/health', { signal: ctrl.signal })
         .then(function (res) { api.mode = res.ok ? 'live' : 'demo'; })
-        .catch(function () { api.mode = 'demo'; })
+        .catch(function () { api.mode = navigator.onLine ? 'live' : 'demo'; })
         .then(function () { clearTimeout(timer); fireMode(); return api.mode; });
     }
     function ensureReady() {
@@ -667,12 +667,17 @@
       return readyPromise;
     }
     window.addEventListener('ra:connectivity', function (e) {
-      if (e.detail && e.detail.online) readyPromise = null;
+      if (e.detail && e.detail.online) {
+        readyPromise = null;
+        if (R.offline && R.offline.cacheSnapshot) {
+          R.offline.cacheSnapshot('inventory', null);
+        }
+      }
     });
 
     function readChain(path, snapshotName, demoFn) {
       return ensureReady().then(function () {
-        var online = R.offline.isOnline();
+        var online = R.offline ? R.offline.isOnline() : navigator.onLine;
         if (online && api.mode === 'live') {
           return request('GET', path).then(function (data) {
             api.lastSource = 'live';
@@ -708,14 +713,8 @@
       });
     }
 
-    /* OFFLINE WRITE PATH: apply to the local snapshot + queue for sync.
-       (Also mirrors into the demo state when in demo mode, so the page
-       stays consistent if the backend was never connected.) */
-       function offlineWrite(operation, id, data, demoMutator) {
-      /* ★ FIX: include communityId in every queued payload — the server's
-         FoodItem.create() requires it, and the sync controller passes the
-         payload directly to the model. Without this, the sync returns
-         'failed' within a 200 response and the item never reaches MongoDB. */
+    /* OFFLINE WRITE PATH: apply to the local snapshot + queue for sync. */
+    function offlineWrite(operation, id, data, demoMutator) {
       var payload = Object.assign({}, data, { communityId: DEMO_COMMUNITY_ID });
       var p = R.offline.writeQueued('food_items', operation, id, payload);
       if (api.mode === 'demo' && demoMutator) {
@@ -729,7 +728,7 @@
       return readChain('/food-items?communityId=' + DEMO_COMMUNITY_ID, 'inventory', function () { return clone(demo.food); });
     };
     api.createFoodItem = function (data) {
-      /* POST /api/food-items  (online) | queued offline */
+      /* POST /api/food-items (online) | queued offline */
       if (R.offline && !R.offline.isOnline()) {
         return offlineWrite('create', null, data, function () {
           var item = Object.assign({ id: 'food-' + (demo.seq++) }, data, { updatedAt: new Date().toISOString() });
@@ -820,7 +819,8 @@
           'No food items match your filters.</td></tr>';
       } else {
         tbody.innerHTML = list.map(function (f) {
-          var op = pending[f.id];
+          var id = f._id || f.id;
+          var op = pending[id];
           return '<tr>' +
             '<td data-label="Food"><span class="cell-strong">' + ui.esc(f.name) + '</span>' + pendingChip(op) + '</td>' +
             '<td data-label="Category">' + ui.esc(f.category) + '</td>' +
@@ -830,8 +830,8 @@
             '<td data-label="Status">' + ui.statusBadge(f.status) + '</td>' +
             '<td data-label="Priority">' + prioBadge(f.priority) + '</td>' +
             '<td data-label="Actions"><div class="row-actions">' +
-              '<button class="btn btn-sm act-edit" data-id="' + ui.esc(f.id) + '">' + ui.icon('edit') + 'Edit</button>' +
-              '<button class="btn btn-sm btn-danger-ghost act-del" data-id="' + ui.esc(f.id) + '">' + ui.icon('trash') + 'Delete</button>' +
+              '<button class="btn btn-sm act-edit" data-id="' + ui.esc(id) + '">' + ui.icon('edit') + 'Edit</button>' +
+              '<button class="btn btn-sm btn-danger-ghost act-del" data-id="' + ui.esc(id) + '">' + ui.icon('trash') + 'Delete</button>' +
             '</div></td></tr>';
         }).join('');
       }
@@ -853,7 +853,7 @@
     }
 
     function openDialog(item) {
-      editingId = item ? item.id : null;
+      editingId = item ? (item._id || item.id) : null;
       document.getElementById('food-dialog-title').textContent = item ? 'Edit food item' : 'Add food item';
       document.getElementById('food-submit').textContent = item ? 'Save changes' : 'Save item';
       document.getElementById('f-name').value = item ? item.name : '';
@@ -925,11 +925,12 @@
         var editBtn = e.target.closest('.act-edit');
         var delBtn = e.target.closest('.act-del');
         if (editBtn) {
-          var item = items.filter(function (f) { return f.id === editBtn.getAttribute('data-id'); })[0];
+          var targetId = editBtn.getAttribute('data-id');
+          var item = items.filter(function (f) { return (f._id || f.id) === targetId; })[0];
           if (item) openDialog(item);
         } else if (delBtn) {
           var id = delBtn.getAttribute('data-id');
-          var target = items.filter(function (f) { return f.id === id; })[0];
+          var target = items.filter(function (f) { return (f._id || f.id) === id; })[0];
           if (!target) return;
           ui.confirm({
             title: 'Delete food item?',
@@ -949,14 +950,19 @@
         }
       });
 
-      window.addEventListener('ra:sync-queue', function () { load(); });
+      window.addEventListener('ra:sync-queue', function () {
+        if (R.offline && R.offline.cacheSnapshot) {
+          R.offline.cacheSnapshot('inventory', null);
+        }
+        load();
+      });
 
       load().catch(function (err) { ui.toast('Could not load inventory: ' + err.message, 'error'); });
     });
   })();
   </script>
 
-  <!-- Shared offline + sync layers (loaded after the page script) -->
+  <!-- Shared offline + sync layers -->
   <script src="js/offline.js"></script>
   <script src="js/sync.js"></script>
 </body>
