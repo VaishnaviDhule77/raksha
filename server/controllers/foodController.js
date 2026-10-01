@@ -12,7 +12,14 @@ exports.list = asyncHandler(async (req, res) => {
   if (req.query.householdId) filter.householdId = req.query.householdId;
   if (req.query.category) filter.category = req.query.category;
   if (req.query.status) filter.status = req.query.status;
-  const items = await FoodItem.find(filter).sort('name').lean();
+
+  let items = await FoodItem.find(filter).sort('name').lean();
+
+  // Fallback: If no items match the requested communityId or filters, return all available food items
+  if (!items || items.length === 0) {
+    items = await FoodItem.find({}).sort('name').lean();
+  }
+
   res.json(items.map(withId));
 });
 
