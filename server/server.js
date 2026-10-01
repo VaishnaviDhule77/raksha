@@ -125,23 +125,23 @@ async function seedDefaultData() {
       console.log('[RAKSHA] Seeded default Food Items.');
     }
 
-    // 3. Force re-seed Resource items if count is less than 3
+    // 3. Force re-seed Resources with Strict Schema Enum Compliance
     const resourceCount = await Resource.countDocuments();
     if (resourceCount < 3) {
       await Resource.deleteMany({});
       await Resource.insertMany([
         {
           name: 'Community Freezer Unit A',
-          type: 'Cold Storage',
+          type: 'Freezer',
           capacity: 150,
           unit: 'kg',
           location: 'Community Center',
-          powerSource: 'Grid + Generator',
-          status: 'Operational',
-          operationalStatus: 'Operational',
+          powerSource: 'Grid',
           operational: true,
+          operationalStatus: 'Operational',
+          poweredByGenerator: true,
           availability: 'Available',
-          owner: 'Community Board',
+          ownerType: 'Community',
           communityId: community._id
         },
         {
@@ -150,30 +150,30 @@ async function seedDefaultData() {
           capacity: 5,
           unit: 'kW',
           location: 'Storage Shed',
-          powerSource: 'Diesel',
-          status: 'Operational',
-          operationalStatus: 'Operational',
+          powerSource: 'Fuel',
           operational: true,
+          operationalStatus: 'Operational',
+          poweredByGenerator: false,
           availability: 'Available',
-          owner: 'Local Volunteer Team',
+          ownerType: 'Community',
           communityId: community._id
         },
         {
-          name: 'Insulated Transport Cooler',
-          type: 'Cold Storage',
+          name: 'Insulated Cold Box',
+          type: 'Cold box',
           capacity: 50,
-          unit: 'L',
+          unit: 'kg',
           location: 'Main Hub',
-          powerSource: 'Passive',
-          status: 'Operational',
-          operationalStatus: 'Operational',
+          powerSource: 'Ice',
           operational: true,
+          operationalStatus: 'Operational',
+          poweredByGenerator: false,
           availability: 'Available',
-          owner: 'Community Center',
+          ownerType: 'Community',
           communityId: community._id
         }
       ]);
-      console.log('[RAKSHA] Force-seeded default Resources.');
+      console.log('[RAKSHA] Successfully force-seeded default Resources!');
     }
   } catch (err) {
     console.warn('[RAKSHA] Auto-seeding skipped/failed:', err.message);
