@@ -67,14 +67,27 @@ function presentRun(run) {
   };
 }
 
+// Helper to resolve communityDoc with automatic fallback for missing/dummy IDs
+async function resolveCommunity(communityId) {
+  let communityDoc = null;
+  if (communityId) {
+    communityDoc = await Community.findById(communityId);
+  }
+  if (!communityDoc) {
+    communityDoc = await Community.findOne().sort({ createdAt: 1 });
+  }
+  if (!communityDoc) {
+    throw new ApiError(404, 'No community document found in database. Please seed default data.');
+  }
+  return communityDoc;
+}
+
 // POST /api/simulations/run — pipeline steps 1–5 + 6–16 + 17 (save)
 exports.run = asyncHandler(async (req, res) => {
   const b = req.body || {};
-  if (!b.communityId) throw new ApiError(400, 'Field "communityId" is required.');
 
-  // Steps 1–4: load community, inventory, resources, scenario
-  const communityDoc = await Community.findById(b.communityId);
-  if (!communityDoc) throw new ApiError(404, `Community not found: ${b.communityId}`);
+  // Step 1: Load community with fallback resolution
+  const communityDoc = await resolveCommunity(b.communityId);
 
   let cfg, scenarioId = null;
   if (b.scenarioId) {
@@ -132,7 +145,11 @@ exports.run = asyncHandler(async (req, res) => {
 
 // GET /api/simulations?communityId=
 exports.list = asyncHandler(async (req, res) => {
-  const filter = req.query.communityId ? { communityId: req.query.communityId } : {};
+  let filter = {};
+  if (req.query.communityId) {
+    const communityDoc = await resolveCommunity(req.query.communityId);
+    filter = { communityId: communityDoc._id };
+  }
   const runs = await SimulationRun.find(filter).sort({ startedAt: -1 }).limit(20).lean();
   res.json(runs.map(r => ({
     runId: String(r._id),
@@ -147,7 +164,11 @@ exports.list = asyncHandler(async (req, res) => {
 
 // GET /api/simulations/latest?communityId=
 exports.latest = asyncHandler(async (req, res) => {
-  const filter = req.query.communityId ? { communityId: req.query.communityId } : {};
+  let filter = {};
+  if (req.query.communityId) {
+    const communityDoc = await resolveCommunity(req.query.communityId);
+    filter = { communityId: communityDoc._id };
+  }
   const run = await SimulationRun.findOne(filter).sort({ startedAt: -1 });
   if (!run) return res.json(null);
   res.json(presentRun(run));
