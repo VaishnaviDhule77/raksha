@@ -80,7 +80,7 @@
     .sidebar { display: flex; flex-direction: column; gap: 4px; background: var(--frame); border-right: 1px solid var(--frame-line); padding: 18px 14px 16px; position: sticky; top: var(--topbar-h); height: calc(100vh - var(--topbar-h)); overflow-y: auto; }
     .sidebar-label { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #7A93A1; margin: 10px 12px 6px; }
     .sidebar-label:first-child { margin-top: 0; }
-    .nav-link { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px; text-decoration: none; color: var(--frame-text); font-weight: 500; font-size: 14px; }
+    .nav-link { position: sticky; top: var(--topbar-h); display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px; text-decoration: none; color: var(--frame-text); font-weight: 500; font-size: 14px; }
     .nav-link:hover { background: rgba(255,255,255,.05); color: #fff; }
     .nav-link.active { background: rgba(20,148,132,.22); color: #fff; box-shadow: inset 3px 0 0 0 #2FBFA8; }
     .nav-link svg { width: 19px; height: 19px; flex: none; }
