@@ -37,11 +37,6 @@ app.use((req, res, next) => {
 });
 
 // ── Legacy community ID resolver (frontend compatibility shim) ──
-// The frontend prototype was built before the backend existed and sends its
-// built-in demo dataset's community ID (""650c1f1e2f8a1b0012345678""), which is not a
-// MongoDB ObjectId. This middleware rewrites any non-ObjectId communityId
-// (query, body, or sync-item payload) to the first real community in the
-// database — the single-community assumption of the prototype.
 app.use(async (req, res, next) => {
   try {
     const Community = mongoose.model('Community');
@@ -65,7 +60,6 @@ app.use(async (req, res, next) => {
       }
     }
   } catch (err) {
-    // Never block a request because of the shim — let normal error handling deal with it
     console.warn('[RAKSHA] Community resolver skipped:', err.message);
   }
   next();
@@ -99,12 +93,48 @@ if (fs.existsSync(clientDir)) {
 app.use(notFound);
 app.use(errorHandler);
 
-/* ★ CHANGE 2: fail loudly and clearly. Without the .catch(), a bad Mongo
-   URI on Render shows up as a cryptic "UnhandledPromiseRejection" in the
-   logs; with it, you get the actual reason at the top of the log. */
+// ── Database Auto-Seeder ────────────────────────────────────
+async function seedDefaultData() {
+  try {
+    const Community = mongoose.model('Community');
+    const FoodItem = mongoose.model('FoodItem');
+
+    // 1. Ensure at least one Community document exists
+    let community = await Community.findOne();
+    if (!community) {
+      community = await Community.create({
+        name: 'Demo Community',
+        location: 'Main District'
+      });
+      console.log('[RAKSHA] Seeded default Community:', community._id);
+    }
+
+    // 2. Ensure default Food Items exist in the database
+    const foodCount = await FoodItem.countDocuments();
+    if (foodCount === 0) {
+      await FoodItem.insertMany([
+        { name: 'Cooked food (rice & curry)', category: 'Cooked', quantity: 30, unit: 'kg', storageType: 'Refrigerated', status: 'PRIORITY', priority: 'High', communityId: community._id },
+        { name: 'Milk', category: 'Dairy', quantity: 20, unit: 'L', storageType: 'Refrigerated', status: 'CRITICAL', priority: 'Critical', communityId: community._id },
+        { name: 'Fresh vegetables', category: 'Vegetables', quantity: 40, unit: 'kg', storageType: 'Ambient', status: 'PROTECT', priority: 'Medium', communityId: community._id },
+        { name: 'Meat & fish', category: 'Meat', quantity: 20, unit: 'kg', storageType: 'Frozen', status: 'CRITICAL', priority: 'Critical', communityId: community._id },
+        { name: 'Frozen food', category: 'Frozen', quantity: 30, unit: 'kg', storageType: 'Frozen', status: 'PRIORITY', priority: 'High', communityId: community._id },
+        { name: 'Rice & grains', category: 'Grains', quantity: 80, unit: 'kg', storageType: 'Ambient', status: 'STABLE', priority: 'Low', communityId: community._id },
+        { name: 'Canned food', category: 'Canned', quantity: 50, unit: 'kg', storageType: 'Ambient', status: 'STABLE', priority: 'Low', communityId: community._id }
+      ]);
+      console.log('[RAKSHA] Seeded default Food Items.');
+    }
+  } catch (err) {
+    console.warn('[RAKSHA] Auto-seeding skipped/failed:', err.message);
+  }
+}
+
+// ── Server Startup ──────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
 connectMongo()
-  .then(() => {
+  .then(async () => {
+    // Seed initial demo data after successful connection
+    await seedDefaultData();
+
     app.listen(PORT, () => {
       console.log(`[RAKSHA] API  ready -> http://localhost:${PORT}/api/health`);
       if (fs.existsSync(clientDir)) console.log(`[RAKSHA] App  ready -> http://localhost:${PORT}`);
