@@ -41,9 +41,16 @@ app.use(async (req, res, next) => {
   try {
     const Community = mongoose.model('Community');
     const fix = async (val) => {
-      if (!val || mongoose.isValidObjectId(val)) return val; // valid ObjectId → leave untouched
+      if (!val) return val;
+      // Fetch primary active community
       const community = await Community.findOne().sort({ createdAt: 1 }).lean();
-      return community ? String(community._id) : val;        // no community in DB → let controllers report it
+      if (!community) return val;
+      
+      // If the provided ID is invalid or doesn't exist, map it to the primary community _id
+      if (!mongoose.isValidObjectId(val)) return String(community._id);
+      
+      const exists = await Community.exists({ _id: val });
+      return exists ? val : String(community._id);
     };
 
     if (req.query && req.query.communityId) {
@@ -100,7 +107,7 @@ if (fs.existsSync(clientDir)) {
 app.use(notFound);
 app.use(errorHandler);
 
-// ── Database Auto-Seeder ────────────────────────────────────
+// ── Database Auto-Seeder & ID Normalizer ────────────────────
 async function seedDefaultData() {
   try {
     const Community = mongoose.model('Community');
@@ -108,7 +115,7 @@ async function seedDefaultData() {
     const Resource = mongoose.model('Resource');
 
     // 1. Ensure primary Community document exists
-    let community = await Community.findOne();
+    let community = await Community.findOne().sort({ createdAt: 1 });
     if (!community) {
       community = await Community.create({
         name: 'Demo Community',
@@ -117,13 +124,19 @@ async function seedDefaultData() {
       console.log('[RAKSHA] Seeded default Community:', community._id);
     }
 
-    // 2. Ensure existing orphaned food items bind to the primary communityId
-    await FoodItem.updateMany(
-      { $or: [{ communityId: {$exists: false } }, { communityId: null }] },
+    // 2. Normalization: Re-assign ALL food items and resources to the primary Community ID
+    const foodUpdateResult = await FoodItem.updateMany(
+      {},
+      { $set: { communityId: community._id } }
+    );
+    console.log(`[RAKSHA] Standardized ${foodUpdateResult.modifiedCount} food items to Community ID: ${community._id}`);
+
+    await Resource.updateMany(
+      {},
       { $set: { communityId: community._id } }
     );
 
-    // 3. Upsert default food items to guarantee core inventory options exist
+    // 3. Upsert default food items if missing
     const defaultFoods = [
       { name: 'Cooked food (rice & curry)', category: 'Cooked', quantity: 30, unit: 'kg', storageType: 'Refrigerated', status: 'PRIORITY', priority: 'High', communityId: community._id },
       { name: 'Milk', category: 'Dairy', quantity: 20, unit: 'L', storageType: 'Refrigerated', status: 'CRITICAL', priority: 'Critical', communityId: community._id },
@@ -202,7 +215,7 @@ async function seedDefaultData() {
 const PORT = process.env.PORT || 4000;
 connectMongo()
   .then(async () => {
-    // Seed initial demo data after successful connection
+    // Seed and normalize demo data after successful connection
     await seedDefaultData();
 
     app.listen(PORT, () => {
