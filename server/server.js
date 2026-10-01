@@ -98,6 +98,7 @@ async function seedDefaultData() {
   try {
     const Community = mongoose.model('Community');
     const FoodItem = mongoose.model('FoodItem');
+    const Resource = mongoose.model('Resource');
 
     // 1. Ensure at least one Community document exists
     let community = await Community.findOne();
@@ -122,6 +123,17 @@ async function seedDefaultData() {
         { name: 'Canned food', category: 'Canned', quantity: 50, unit: 'kg', storageType: 'Ambient', status: 'STABLE', priority: 'Low', communityId: community._id }
       ]);
       console.log('[RAKSHA] Seeded default Food Items.');
+    }
+
+    // 3. Ensure default Resource items exist in the database
+    const resourceCount = await Resource.countDocuments();
+    if (resourceCount === 0) {
+      await Resource.insertMany([
+        { name: 'Community Freezer Unit A', type: 'Cold Storage', capacity: 150, unit: 'kg', location: 'Community Center', powerSource: 'Grid + Generator', operationalStatus: 'Operational', operational: true, availability: 'Available', owner: 'Community Board', communityId: community._id },
+        { name: 'Backup Generator 5kW', type: 'Generator', capacity: 5, unit: 'kW', location: 'Storage Shed', powerSource: 'Diesel', operationalStatus: 'Operational', operational: true, availability: 'Available', owner: 'Local Volunteer Team', communityId: community._id },
+        { name: 'Insulated Transport Cooler', type: 'Cold Storage', capacity: 50, unit: 'L', location: 'Main Hub', powerSource: 'Passive', operationalStatus: 'Operational', operational: true, availability: 'Available', owner: 'Community Center', communityId: community._id }
+      ]);
+      console.log('[RAKSHA] Seeded default Resources.');
     }
   } catch (err) {
     console.warn('[RAKSHA] Auto-seeding skipped/failed:', err.message);
