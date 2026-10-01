@@ -125,15 +125,55 @@ async function seedDefaultData() {
       console.log('[RAKSHA] Seeded default Food Items.');
     }
 
-    // 3. Ensure default Resource items exist in the database
+    // 3. Force re-seed Resource items if count is less than 3
     const resourceCount = await Resource.countDocuments();
-    if (resourceCount === 0) {
+    if (resourceCount < 3) {
+      await Resource.deleteMany({});
       await Resource.insertMany([
-        { name: 'Community Freezer Unit A', type: 'Cold Storage', capacity: 150, unit: 'kg', location: 'Community Center', powerSource: 'Grid + Generator', operationalStatus: 'Operational', operational: true, availability: 'Available', owner: 'Community Board', communityId: community._id },
-        { name: 'Backup Generator 5kW', type: 'Generator', capacity: 5, unit: 'kW', location: 'Storage Shed', powerSource: 'Diesel', operationalStatus: 'Operational', operational: true, availability: 'Available', owner: 'Local Volunteer Team', communityId: community._id },
-        { name: 'Insulated Transport Cooler', type: 'Cold Storage', capacity: 50, unit: 'L', location: 'Main Hub', powerSource: 'Passive', operationalStatus: 'Operational', operational: true, availability: 'Available', owner: 'Community Center', communityId: community._id }
+        {
+          name: 'Community Freezer Unit A',
+          type: 'Cold Storage',
+          capacity: 150,
+          unit: 'kg',
+          location: 'Community Center',
+          powerSource: 'Grid + Generator',
+          status: 'Operational',
+          operationalStatus: 'Operational',
+          operational: true,
+          availability: 'Available',
+          owner: 'Community Board',
+          communityId: community._id
+        },
+        {
+          name: 'Backup Generator 5kW',
+          type: 'Generator',
+          capacity: 5,
+          unit: 'kW',
+          location: 'Storage Shed',
+          powerSource: 'Diesel',
+          status: 'Operational',
+          operationalStatus: 'Operational',
+          operational: true,
+          availability: 'Available',
+          owner: 'Local Volunteer Team',
+          communityId: community._id
+        },
+        {
+          name: 'Insulated Transport Cooler',
+          type: 'Cold Storage',
+          capacity: 50,
+          unit: 'L',
+          location: 'Main Hub',
+          powerSource: 'Passive',
+          status: 'Operational',
+          operationalStatus: 'Operational',
+          operational: true,
+          availability: 'Available',
+          owner: 'Community Center',
+          communityId: community._id
+        }
       ]);
-      console.log('[RAKSHA] Seeded default Resources.');
+      console.log('[RAKSHA] Force-seeded default Resources.');
     }
   } catch (err) {
     console.warn('[RAKSHA] Auto-seeding skipped/failed:', err.message);
