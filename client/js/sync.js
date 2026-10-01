@@ -1,24 +1,22 @@
 ﻿/* ================================================================
    RAKSHA — sync.js (shared, loaded after offline.js)
    ----------------------------------------------------------------
-   Sync engine:  IndexedDB syncQueue → POST /api/sync → MongoDB
-                 → operation marked synced (entry removed).
+   Sync engine: IndexedDB syncQueue → POST /api/sync → MongoDB
+                → operation marked synced (entry removed).
 
    Conflict handling: if the server detects the record changed online
    after our offline edit (baseUpdatedAt), it returns status "conflict"
    with the server document. We NEVER silently overwrite: a dialog shows
    both versions and the coordinator chooses.
 
-   v1.1.6 changes:
+   v1.1.7 changes:
+   ★ FIX: Automatic local snapshot updates for server-assigned IDs and docs.
    ★ FIX 5 — listen for ra:sync-queue event (badge updates on queueing).
    ★ FIX 7 — updateBadge has a .catch() for visible console errors.
    ★ FIX 8 — flush() probes /api/health directly instead of trusting
      the stale cached R.api.mode.
-   ★ FIX 9 — removed the self-dispatching R.dispatch('ra:sync-queue')
-     from inside updateBadge(). This created an infinite event loop:
-     updateBadge dispatched ra:sync-queue → the ra:sync-queue listener
-     called updateBadge again → which dispatched again → hundreds of
-     API requests and a page that constantly reloaded the table.
+   ★ FIX 9 — removed self-dispatching R.dispatch('ra:sync-queue')
+     from inside updateBadge().
    ================================================================ */
 (function () {
   'use strict';
@@ -83,10 +81,6 @@
         return map;
       }).catch(function () { return {}; });
     },
-    /* ★ FIX 9: no R.dispatch() here — dispatching ra:sync-queue from
-       inside updateBadge creates an infinite loop because the
-       ra:sync-queue listener calls updateBadge again. offline.js
-       dispatches the event when it queues a write; that's sufficient. */
     updateBadge: function () {
       return queueAll().then(function (items) {
         var pending = items.filter(function (i) { return i.status === 'pending'; }).length;
@@ -104,7 +98,6 @@
         console.warn('[RAKSHA sync] Badge update failed:', err);
       });
     },
-    /* ★ FIX 8: flush() probes /api/health directly. */
     flush: function (opts) {
       var silent = !!(opts && opts.silent);
       return sync.pendingEntries().then(function (pending) {
@@ -144,6 +137,7 @@
             var results = res.results || [];
             var applied = 0, conflicts = 0, failed = 0;
             var chain = Promise.resolve();
+
             pending.forEach(function (entry, i) {
               var r = results[i] || { status: 'failed', reason: 'no response' };
               chain = chain.then(function () {
@@ -158,9 +152,18 @@
                   return Promise.resolve();
                 }
                 applied++;
-                return queueDelete(entry.id);
+                
+                var updateLocal = Promise.resolve();
+                if (r.serverDoc) {
+                  updateLocal = off.applyServerDoc(entry.collection, entry.recordId, r.serverDoc);
+                }
+
+                return updateLocal.then(function () {
+                  return queueDelete(entry.id);
+                });
               });
             });
+
             return chain.then(function () {
               return sync.updateBadge();
             }).then(function () {
@@ -197,6 +200,9 @@
           return req('POST', '/sync', body).then(function (res) {
             var r = (res.results && res.results[0]) || {};
             if (r.status === 'failed') throw new Error(r.reason || 'apply failed');
+            if (r.serverDoc) {
+              off.applyServerDoc(entry.collection, entry.recordId, r.serverDoc);
+            }
             return queueDelete(entry.id);
           }).then(function () {
             if (R.ui) R.ui.toast('Your offline version was applied to the server.', 'success');

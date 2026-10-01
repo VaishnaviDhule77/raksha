@@ -11,21 +11,18 @@
      (optimistic) and enqueues them for sync — never pretends an API
      call succeeded.
 
-   v1.1.4 fixes:
+   v1.1.5 updates:
+   ★ FIX: Guaranteed merged snapshot management during offline CRUD.
    ★ FIX 1 — queue compaction for locally-created records.
    ★ FIX 2 — server-recovery poll.
    ★ FIX 3 — confirm dialog patch: <form method="dialog"> wrapper.
    ★ FIX 4 — persisted simulated-offline state (localStorage).
-   ★ FIX 6 — db facade store-name mapping for sync_queue → syncQueue
-     in put/add/getAll. Previously only get/delete had the mapping;
-     sync.js calls db.getAll('sync_queue') and db.put('sync_queue', ...)
-     which opened a transaction on a non-existent store and silently
-     failed, so the sync badge never showed pending items.
+   ★ FIX 6 — db facade store-name mapping for sync_queue → syncQueue.
    ================================================================ */
 (function () {
   'use strict';
   var R = window.RAKSHA = window.RAKSHA || {};
-  R.version = '1.1.4-offline';
+  R.version = '1.1.5-offline';
 
   var DB_NAME = 'rakshaDB';
   var DB_VERSION = 1;
@@ -76,6 +73,7 @@
     });
     return off._dbPromise;
   }
+
   function tx(store, mode, op) {
     return openDB().then(function (db) {
       return new Promise(function (resolve, reject) {
@@ -86,6 +84,7 @@
       });
     });
   }
+
   function rawGet(store, key)      { return tx(store, 'readonly',  function (s) { return s.get(key); }); }
   function rawPut(store, rec)      { return tx(store, 'readwrite', function (s) { return s.put(rec); }); }
   function rawAdd(store, rec)      { return tx(store, 'readwrite', function (s) { return s.add(rec); }); }
@@ -116,12 +115,10 @@
       put: function (store, rec) {
         if (store === 'plan_notes') return rawPut('metadata', Object.assign({ key: 'notes:' + rec.planId }, rec));
         if (store === 'offline_plans') return rawPut('actionPlans', Object.assign({ key: rec.runId }, rec));
-        /* ★ FIX 6: sync_queue → syncQueue mapping for put */
         if (store === 'sync_queue') return rawPut('syncQueue', rec);
         return rawPut(store, rec);
       },
       add: function (store, rec) {
-        /* ★ FIX 6: sync_queue → syncQueue mapping for add */
         if (store === 'sync_queue') return rawAdd('syncQueue', rec);
         return rawAdd(store, rec);
       },
@@ -131,7 +128,6 @@
             return all.filter(function (r) { return r.runId && r.plan; });
           });
         }
-        /* ★ FIX 6: sync_queue → syncQueue mapping for getAll */
         if (store === 'sync_queue') return rawGetAll('syncQueue');
         return rawGetAll(store);
       },
@@ -150,11 +146,13 @@
     return rawPut(m.store, { key: m.key, data: data, cachedAt: new Date().toISOString() })
       .catch(function (e) { console.warn('[RAKSHA] snapshot write failed:', name, e); });
   };
+
   off.loadSnapshot = function (name) {
     var m = SNAPSHOT_MAP[name] || { store: 'metadata', key: 'snap-' + name };
     return rawGet(m.store, m.key).then(function (rec) { return rec ? rec.data : null; })
       .catch(function () { return null; });
   };
+
   off.getSnapshotRecord = function (store, key) { return rawGet(store, key); };
 
   /* ---------------- offline write queue ---------------- */
@@ -162,9 +160,9 @@
 
   function mutateSnapshot(store, mutator) {
     return rawGet(store, 'snapshot').then(function (rec) {
-      if (!rec || !Array.isArray(rec.data)) return null;
-      var result = mutator(rec.data);
-      return rawPut(store, { key: 'snapshot', data: rec.data, cachedAt: new Date().toISOString() })
+      var list = (rec && Array.isArray(rec.data)) ? rec.data : [];
+      var result = mutator(list);
+      return rawPut(store, { key: 'snapshot', data: list, cachedAt: new Date().toISOString() })
         .then(function () { return result; });
     });
   }
@@ -173,7 +171,7 @@
     var store = COLLECTION_STORE[collection];
     if (!store) return Promise.reject(new Error('Offline writes not supported for ' + collection));
 
-    /* ★ FIX 1 — Queue compaction for locally-created records. */
+    /* Queue compaction for locally-created records */
     if (recordId && String(recordId).indexOf('local-') === 0 && operation !== 'create') {
       return rawGetAll('syncQueue').then(function (entries) {
         var create = entries.filter(function (e) {
@@ -210,21 +208,19 @@
     var baseUpdatedAt = null;
 
     return rawGet(store, 'snapshot').then(function (rec) {
-      var list = (rec && rec.data) || [];
+      var list = (rec && Array.isArray(rec.data)) ? rec.data : [];
       if (operation !== 'create' && recordId != null) {
         var cur = list.filter(function (x) { return x.id === recordId; })[0];
         if (cur) baseUpdatedAt = cur.updatedAt || null;
       }
-      return rawGet(store, 'snapshot');
-    }).then(function (rec) {
-      var hasSnapshot = !!(rec && Array.isArray(rec.data));
+      return list;
+    }).then(function (existingList) {
       var localId = recordId;
 
       function applyLocal() {
-        if (!hasSnapshot) return null;
-        var list = rec.data;
+        var list = existingList;
         if (operation === 'create') {
-          localId = 'local-' + Date.now();
+          localId = 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
           var item = Object.assign({}, payload, { id: localId });
           list.push(item);
           return item;
@@ -241,25 +237,23 @@
       }
 
       var applied = applyLocal();
-      var writeSnapshot = hasSnapshot
-        ? rawPut(store, { key: 'snapshot', data: rec.data, cachedAt: new Date().toISOString() })
-        : Promise.resolve();
-
-      return writeSnapshot.then(function () {
-        return rawAdd('syncQueue', {
-          deviceId: deviceId,
-          collection: collection,
-          operation: operation,
-          recordId: (operation === 'create') ? localId : recordId,
-          payload: payload,
-          baseUpdatedAt: baseUpdatedAt,
-          status: 'pending',
-          queuedAt: new Date().toISOString()
+      
+      return rawPut(store, { key: 'snapshot', data: existingList, cachedAt: new Date().toISOString() })
+        .then(function () {
+          return rawAdd('syncQueue', {
+            deviceId: deviceId,
+            collection: collection,
+            operation: operation,
+            recordId: (operation === 'create') ? localId : recordId,
+            payload: payload,
+            baseUpdatedAt: baseUpdatedAt,
+            status: 'pending',
+            queuedAt: new Date().toISOString()
+          });
+        }).then(function () {
+          R.dispatch('ra:sync-queue', {});
+          return applied;
         });
-      }).then(function () {
-        R.dispatch('ra:sync-queue', {});
-        return applied;
-      });
     });
   };
 
@@ -386,7 +380,7 @@
     document.head.appendChild(css);
   })();
 
-  /* ★ FIX 3 — Confirm dialog patch (form method="dialog"). */
+  /* Confirm dialog patch */
   (function patchConfirmDialog() {
     var existing = document.getElementById('ra-confirm');
     if (existing) {
@@ -406,7 +400,7 @@
     document.body.appendChild(d);
   })();
 
-  /* ★ FIX 2 — Server-recovery poll. */
+  /* Server-recovery poll */
   setInterval(function () {
     if (!navigator.onLine || off.forced) return;
     if (!R.api || R.api.mode === 'live') return;
@@ -421,5 +415,7 @@
 
   /* Run once at load. */
   offlineUpdate();
-  R.onReady(function () { offlineUpdate(); });
+  if (typeof R.onReady === 'function') {
+    R.onReady(function () { offlineUpdate(); });
+  }
 })();
